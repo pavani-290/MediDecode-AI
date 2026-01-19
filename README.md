@@ -22,10 +22,10 @@ MediDecode AI is a sophisticated health-tech web application designed to empower
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React (ESM), Tailwind CSS, FontAwesome.
+- **Frontend**:  python,React (ESM), Tailwind CSS, FontAwesome.
 - **AI Engine**: Google Gemini API (@google/genai).
 - **Core Models**: 
-  - `gemini-3-flash-preview` (Primary Analysis & Chat)
+  - `gemini-3-flash-preview` and vertex AI (Primary Analysis & Chat)
   - `gemini-2.5-flash` (Maps Grounding & Pharmacies)
   - `gemini-2.5-flash-preview-tts` (Text-to-Speech)
 - **Deployment & PWA**: Service Workers, IndexedDB for local storage.
