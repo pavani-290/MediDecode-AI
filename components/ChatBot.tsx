@@ -50,7 +50,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
     setIsTyping(true);
 
     try {
-      const response = await getChatResponse(messages, text, context, language);
+      // Fix: Added explicit cast for language to SupportedLanguage to match service signature
+      const response = await getChatResponse(messages, text, context, language as SupportedLanguage);
       const parts = response.split('[SUGGESTION]');
       const mainText = parts[0].trim();
       const newSuggestions = parts.slice(1).map(s => s.trim().replace(/^[-*]\s*/, ''));

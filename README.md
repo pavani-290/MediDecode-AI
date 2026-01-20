@@ -2,51 +2,54 @@
 
 **Turning Medical Handwriting into Clear Understanding.**
 
-MediDecode AI is a sophisticated health-tech web application designed to empower patients by deciphering complex, often illegible medical prescriptions and lab reports. Using state-of-the-art Generative AI, the app translates clinical shorthand and messy handwriting into simple, everyday language across 12+ native languages.
+MediDecode AI is a sophisticated health-tech web application designed to empower patients by deciphering complex, often illegible medical prescriptions and lab reports. Using state-of-the-art Google AI, the app translates clinical shorthand and messy handwriting into simple, everyday language across 12+ native languages.
+
+---
+
+## 🌟 Powered by Google AI
+This application is built exclusively using the **Google Gemini ecosystem**, leveraging cutting-edge multimodal and grounding technologies:
+
+- **Gemini 3 Flash**: The "brain" of the app, handling advanced OCR and medical reasoning.
+- **Gemini 2.5 Flash**: Orchestrates real-world grounding for location-based pharmacy discovery.
+- **Gemini 2.5 Flash TTS**: Provides high-fidelity, natural medical voice summaries.
+- **Google Maps Tool**: Integrated directly into the AI workflow for verified pharmacy information.
+- **@google/genai SDK**: The core framework for seamless AI communication.
 
 ---
 
 ## 🚀 Key Features
 
 - **Prescription Decoding**: Advanced OCR and LLM-based deciphering of doctor handwriting.
-- **Medicine Breakdown**: Explains general purpose, usage, side-effects, and warnings for every detected medicine.
-- **Lab Report Analysis**: Visualizes lab results (like CBC, Thyroid) with color-coded status bars and plain-language explanations.
-- **Nearby Pharmacies**: Dynamic geolocation-based pharmacy search powered by **Google Maps Grounding**.
-- **Multilingual Support**: Instant translation into 12+ languages (Hindi, Bengali, Spanish, etc.).
-- **AI Concierge**: An intelligent chatbot to answer follow-up questions about scan results.
-- **Voice Summaries**: Integrated Text-to-Speech for audible report summaries.
-- **PDF Export**: Generate professional PDF reports with custom settings for mobile and desktop.
-- **PWA Ready**: Install as a native app on iOS, Android, or Desktop.
+- **Medicine Breakdown**: Explains general purpose, usage, side-effects, and warnings.
+- **Lab Report Analysis**: Visualizes results with color-coded status bars and plain-language explanations.
+- **Pharmacy Locator**: Real-time pharmacy search powered by **Google Maps Grounding**.
+- **Multilingual Support**: Instant translation into 12+ languages.
+- **AI Concierge**: An intelligent chatbot for follow-up health education.
+- **Voice Summaries**: Integrated Text-to-Speech for audible report accessibility.
+- **PWA Ready**: Installable on iOS, Android, and Desktop.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Frontend**:  python,React (ESM), Tailwind CSS, FontAwesome.
-- **AI Engine**: Google Gemini API (@google/genai).
-- **Core Models**: 
-  - `gemini-3-flash-preview` and vertex AI (Primary Analysis & Chat)
-  - `gemini-2.5-flash` (Maps Grounding & Pharmacies)
-  - `gemini-2.5-flash-preview-tts` (Text-to-Speech)
-- **Deployment & PWA**: Service Workers, IndexedDB for local storage.
+- **Frontend**: React (ESM), Tailwind CSS, FontAwesome.
+- **AI Engine**: Google Gemini API.
+- **Deployment**: PWA, Service Workers, IndexedDB for local privacy.
 
 ---
 
-## 📦 Installation
+## 📦 Getting Started
 
 1. Clone the repository.
-2. Install dependencies (standard NPM/Yarn setup).
-3. Configure your environment variable:
-   ```env
-   API_KEY=your_google_gemini_api_key
-   ```
-4. Run the development server.
+2. Install dependencies.
+3. Set your `API_KEY` in the environment.
+4. Launch with `npm start` or your preferred local server.
 
 ---
 
 ## ⚠️ Medical Disclaimer
 
-This application is for **Health Awareness and Education purposes only**. It does not provide medical advice. The AI analysis may contain errors. Always consult a qualified medical professional before making any health decisions.
+This application is for **Health Awareness and Education purposes only**. It does not provide medical advice. Always consult a qualified medical professional before making any health decisions.
 
 ---
 

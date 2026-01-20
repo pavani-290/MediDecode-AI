@@ -1,20 +1,32 @@
-# Google Technology Stack Breakdown
+# Google Technology Stack: AI Integration Breakdown
 
-MediDecode AI leverages the latest advancements in the Google Gemini ecosystem to deliver a high-performance, intelligent healthcare experience.
+MediDecode AI utilizes a specialized suite of Google AI tools to ensure accuracy, grounding, and accessibility.
 
-## 🌟 Major Role: Gemini 3 Flash
-The **Gemini 3 Flash** model plays the most critical role in this application. It handles the "Vision-to-Text" OCR deciphering of complex medical handwriting. Its low latency and high reasoning capability allow it to distinguish between similar-looking drug names and provide clinical context instantly.
+## 🚀 The Core AI Models
 
-## 🛠️ Detailed Tech Integration
+### 1. Gemini 3 Flash (Primary Engine)
+- **Role**: Handwriting OCR, Medical Reasoning, and Multilingual Analysis.
+- **Major Contribution**: Processes raw images of messy prescriptions and converts them into structured JSON data. It identifies complex drug names and lab parameters that traditional OCR fails to read.
+- **Capabilities**: High-speed inference and deep context window for analyzing long reports.
 
-| Technology | Role in Project | Key Benefit |
+### 2. Gemini 2.5 Flash (Grounding Expert)
+- **Role**: Location-Aware Pharmacy Discovery.
+- **Major Contribution**: Acts as the interface between the LLM and the physical world. It takes user GPS coordinates and finds verified local businesses.
+- **Feature**: **Google Maps Grounding** ensures that pharmacy data is real and accurate, reducing hallucinations.
+
+### 3. Gemini 2.5 Flash TTS (Accessibility)
+- **Role**: Natural Text-to-Speech.
+- **Major Contribution**: Converts the AI-generated medical summary into high-quality audio (`Kore` voice profile). This makes the app accessible to elderly patients or those with visual impairments.
+
+## 🛠️ Integrated Google Tools & SDKs
+
+| Tool | Integration Point | Function |
 | :--- | :--- | :--- |
-| **Gemini 3 Flash** | Document Analysis & OCR | Deciphers illegible handwriting and extracts structured medical data. |
-| **Gemini 2.5 Flash** | Dynamic Map Search | Powers the pharmacy locator using **Google Maps Grounding** to find real-world stores. |
-| **Gemini 2.5 Flash TTS** | Audio Accessibility | Converts text summaries into natural-sounding speech for patients with visual impairments. |
-| **Google Maps Tool** | Grounding Service | Allows the AI to verify the existence and locations of pharmacies near the user's GPS coordinates. |
-| **Google Fonts** | UI/UX Design | Uses *Plus Jakarta Sans* for a modern, clean, and professional medical interface. |
-| **Google Generative AI SDK** | API Communication | The unified `@google/genai` library facilitates all real-time interactions with AI models. |
+| **@google/genai SDK** | Service Layer | The official unified client for all Gemini model interactions. |
+| **Google Maps Tool** | Pharmacy Finder | Provides verified grounding chunks for real-world location links. |
+| **Google Search Grounding**| ChatBot (Optional) | Can be toggled for the concierge to find the latest clinical guidelines. |
+| **Google Plus Jakarta Sans**| UI / Typography | Professional, high-readability font for clinical reports. |
+| **Google Chrome / Android** | PWA Deployment | Optimized for installation via Chrome's PWA engine. |
 
-## Why Google AI?
-The integration of **Grounding with Google Search/Maps** sets this app apart, ensuring that the information provided (like location of stores) isn't hallucinated but retrieved from up-to-date real-world data.
+## 🌟 Why this stack plays a major role:
+Without **Gemini 3 Flash**, the app could not read the handwriting. Without **Gemini 2.5 Flash & Maps Tool**, the pharmacy locator would rely on outdated static databases. This integration ensures a "Live" medical assistant that understands both the paper in your hand and the world around you.

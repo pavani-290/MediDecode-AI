@@ -94,12 +94,9 @@ export const analyzeMedicalDocument = async (
   language: SupportedLanguage = 'English',
   profile?: PatientProfile
 ): Promise<AnalysisResult> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key is missing.");
-
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey });
-    const model = "gemini-3-flash-preview"; 
+    // ALWAYS use new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const prompt = `Act as an expert clinical pharmacist and lab technician.
     Analyze the provided image for HEALTH AWARENESS and EDUCATION ONLY.
@@ -112,8 +109,9 @@ export const analyzeMedicalDocument = async (
     3. If dosage is illegible, strictly return "Dosage unclear from image".
     4. Provide clear warnings about medical context.`;
 
+    // MUST use ai.models.generateContent to query GenAI with both the model name and prompt.
     const response = await ai.models.generateContent({
-      model,
+      model: 'gemini-3-flash-preview',
       contents: { 
         parts: [
           { inlineData: { data: base64Image, mimeType } }, 
@@ -143,10 +141,8 @@ export const analyzeMedicalDocument = async (
  * Finds nearby pharmacies using Gemini 2.5 Flash and Maps tool.
  */
 export const findNearbyPharmacies = async (lat: number, lng: number): Promise<any> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return [];
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Initialize with direct process.env.API_KEY reference
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   // Switched to gemini-2.5-flash for more stable Google Maps grounding support
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash", 
@@ -185,11 +181,8 @@ export const translateAnalysisResult = async (
   result: AnalysisResult,
   targetLanguage: SupportedLanguage
 ): Promise<AnalysisResult> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return result;
-
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Translate this medical analysis to ${targetLanguage}. Keep clinical terms accurate. Data: ${JSON.stringify(result)}`,
@@ -204,10 +197,8 @@ export const translateAnalysisResult = async (
 };
 
 export const getSpeech = async (text: string) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return null;
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text }] }],
@@ -226,11 +217,8 @@ export const getChatResponse = async (
   context?: AnalysisResult,
   language: SupportedLanguage = 'English'
 ): Promise<string> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "API Key missing.";
-
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const systemInstruction = `You are "MediDecode Concierge", a clinical education assistant.
     PURPOSE: Explain the current decoded medical report and answer health awareness questions.
@@ -256,6 +244,7 @@ export const getChatResponse = async (
     });
 
     const result = await chat.sendMessage({ message });
+    // result.text is a property, not a method
     const responseText = result.text;
     
     if (!responseText) {

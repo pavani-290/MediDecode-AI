@@ -34,13 +34,16 @@
     <div id="root"></div>
     <script>
       // Service Worker Registration for PWA Installation
+      // Using relative path 'sw.js' instead of '/sw.js' to avoid origin mismatch in preview environments
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('SW registered: ', registration);
-          }).catch(registrationError => {
-            console.log('SW registration failed: ', registrationError);
-          });
+          navigator.serviceWorker.register('sw.js', { scope: './' })
+            .then(registration => {
+              console.log('MediDecode SW registered:', registration.scope);
+            })
+            .catch(error => {
+              console.warn('MediDecode SW registration failed:', error);
+            });
         });
       }
     </script>
