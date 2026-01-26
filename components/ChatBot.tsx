@@ -35,7 +35,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
 
     if (context && context.medicines && context.medicines.length > 0) {
       const medName = context.medicines[0].name;
-      setSuggestions([`What is ${medName}?`, `Side effects for ${medName}?`, "Health tips"]);
+      setSuggestions([`What is ${medName}?`, `Side effects for ${medName}?`, "Explain this report"]);
     } else {
       setSuggestions(baseSuggestions[language] || baseSuggestions['English']);
     }
@@ -52,7 +52,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
         setIsListening(false);
-        // Automatic processing after voice end
         handleSend(transcript);
       };
 
@@ -86,7 +85,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
     setIsTyping(true);
 
     try {
-      const response = await getChatResponse(messages, cleanText, context, language as SupportedLanguage);
+      const response = await getChatResponse([...messages, userMsg], cleanText, context, language as SupportedLanguage);
       setMessages(prev => [...prev, { role: 'model', text: response }]);
     } catch (error: any) {
       setMessages(prev => [...prev, { role: 'model', text: "Medical reasoning service is temporarily busy. Please try again." }]);
@@ -105,7 +104,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-32 right-8 w-[480px] max-w-[calc(100vw-4rem)] h-[750px] max-h-[85vh] bg-white/95 backdrop-blur-3xl rounded-[3.5rem] shadow-4xl flex flex-col z-50 overflow-hidden border border-white/60 animate-in fade-in slide-in-from-bottom-12 duration-500 chatbot-window">
+        <div className="fixed bottom-32 right-8 w-[520px] max-w-[calc(100vw-4rem)] h-[800px] max-h-[85vh] bg-white/95 backdrop-blur-3xl rounded-[3.5rem] shadow-4xl flex flex-col z-50 overflow-hidden border border-white/60 animate-in fade-in slide-in-from-bottom-12 duration-500 chatbot-window">
           <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-950 p-10 text-white relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
             <div className="flex items-center relative z-10">
@@ -132,33 +131,37 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
             )}
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[90%] p-6 rounded-[2.5rem] text-sm font-bold leading-relaxed shadow-lg ${
+                <div className={`max-w-[92%] p-7 rounded-[2.5rem] text-sm font-bold leading-relaxed shadow-lg ${
                   m.role === 'user' 
                     ? 'bg-gradient-to-br from-indigo-600 to-indigo-800 text-white rounded-br-none' 
                     : 'bg-white text-slate-700 border border-slate-100 rounded-bl-none'
                 }`}>
-                  {m.text}
+                  {m.text.split('\n').map((line, idx) => (
+                    <p key={idx} className={line.startsWith('-') || line.startsWith('*') ? 'ml-2 mb-1' : 'mb-2'}>
+                      {line}
+                    </p>
+                  ))}
                 </div>
               </div>
             ))}
             {isTyping && (
               <div className="flex justify-start">
                 <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex space-x-2">
-                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                  <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                  <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-bounce"></div>
+                  <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                  <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="p-10 border-t border-slate-100 bg-white">
+          <div className="p-10 border-t border-slate-100 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
             <div className="flex flex-wrap gap-2.5 mb-8">
               {suggestions.map((s, i) => (
                 <button 
                   key={i}
                   onClick={() => handleSend(s)}
-                  className="text-[9px] bg-slate-50 hover:bg-slate-900 hover:text-white text-slate-600 border border-slate-100 px-5 py-3 rounded-2xl transition-all font-black uppercase tracking-widest"
+                  className="text-[9px] bg-slate-50 hover:bg-slate-900 hover:text-white text-slate-600 border border-slate-100 px-5 py-3 rounded-2xl transition-all font-black uppercase tracking-widest active:scale-95"
                 >
                   {s}
                 </button>

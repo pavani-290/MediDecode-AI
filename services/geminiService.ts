@@ -182,23 +182,38 @@ export const getSpeech = async (text: string) => {
 
 export const getChatResponse = async (history: ChatMessage[], message: string, context?: AnalysisResult, language: SupportedLanguage = 'English'): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const systemInstruction = `You are the MediDecode AI Concierge, a highly specialized medical assistant.
+  
+  CURRENT SCAN DATA: ${context ? JSON.stringify(context) : 'No document currently scanned.'}
+  TARGET LANGUAGE: ${language}
+  
+  STRICT BEHAVIOR RULES:
+  1. ACCURACY & CONCISENESS: Provide direct, clear, and medically accurate answers. Use bullet points for readability.
+  2. CONTEXTUAL FOCUS: If a document is scanned, prioritize its content. Answer questions about specific medicines, dosages, and lab values mentioned in the scan first.
+  3. FOLLOW-UP EXPERTISE: Handle follow-up queries like "Why am I taking this?", "Are there side effects?", or "What does this blood value mean?" by referencing the scanned report details.
+  4. HEALTH ADVICE: Provide general, safe health advice (e.g., "take with water", "avoid grapefruit if mentioned") but always maintain a professional clinical boundary.
+  5. DISCLAIMER: Every response MUST conclude with a brief, bold disclaimer: "This is an AI interpretation. Please verify all information with your physician."
+  6. LANGUAGE: Respond only in ${language}.
+  7. If no document is present, politely ask the user to scan a prescription or report first for specific analysis.`;
+
   const chat = ai.chats.create({
     model: 'gemini-3-flash-preview',
     config: { 
-      systemInstruction: `You are the MediDecode AI Assistant. 
-      CURRENT SCAN CONTEXT: ${JSON.stringify(context || 'No document available')}. 
-      LANGUAGE: ${language}.
-      INSTRUCTIONS:
-      1. Provide extremely accurate and CONCISE answers based strictly on the scanned medical document provided.
-      2. If asked about medicines in the document, refer strictly to the detected names and dosages.
-      3. For lab results, explain the status (High/Low/Normal) clearly and what it generally means clinically.
-      4. Always include a clinical disclaimer that this is AI interpretation.`,
-      safetySettings: SAFETY_SETTINGS 
+      systemInstruction,
+      safetySettings: SAFETY_SETTINGS,
+      thinkingConfig: { thinkingBudget: 1000 }
     },
     history: history.map(m => ({ role: m.role, parts: [{ text: m.text }] }))
   });
-  const result = await chat.sendMessage({ message });
-  return result.text || "...";
+  
+  try {
+    const result = await chat.sendMessage({ message });
+    return result.text || "I'm sorry, I couldn't process that. Please try again.";
+  } catch (err) {
+    console.error("Chat error:", err);
+    return "I am currently experiencing a high clinical load. Please try your question again in a moment.";
+  }
 };
 
 // Added generateMockupImage to support presentation asset generation in MockupLab
