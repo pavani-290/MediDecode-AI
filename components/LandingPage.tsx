@@ -32,8 +32,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
   ];
 
   return (
-    <div className="min-h-screen bg-[#fcfdff] relative">
-      <nav className={`fixed top-0 left-0 right-0 z-[60] transition-all duration-500 px-6 md:px-10 py-4 ${scrolled ? 'bg-white/80 backdrop-blur-3xl border-b border-slate-100 py-3 shadow-lg shadow-indigo-500/5' : 'bg-transparent'}`}>
+    <div className="min-h-screen bg-[#fcfdff] relative pointer-events-auto">
+      <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 px-6 md:px-10 py-4 ${scrolled ? 'bg-white/80 backdrop-blur-3xl border-b border-slate-100 py-3 shadow-lg' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
             <LogoMark />
@@ -42,13 +42,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
           <div className="flex items-center space-x-6">
             <button 
               onClick={(e) => { e.preventDefault(); onLoginClick(); }}
-              className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+              className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer relative z-10"
             >
               Portal Access
             </button>
             <button 
               onClick={(e) => { e.preventDefault(); onStart(); }}
-              className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-8 py-4 rounded-2xl transition-all shadow-2xl hover:bg-indigo-600 hover:shadow-indigo-500/40 hover:-translate-y-1 cursor-pointer"
+              className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-8 py-4 rounded-2xl transition-all shadow-2xl hover:bg-indigo-600 hover:-translate-y-1 cursor-pointer relative z-10"
             >
               Start Scan <i className="fas fa-bolt ml-2 text-rose-400"></i>
             </button>
@@ -56,9 +56,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
         </div>
       </nav>
 
-      <section className="pt-48 pb-24 px-6 relative overflow-hidden z-10">
+      <section className="pt-48 pb-24 px-6 relative overflow-visible z-20">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-          <div className="lg:col-span-7 space-y-10 text-center lg:text-left">
+          <div className="lg:col-span-7 space-y-10 text-center lg:text-left relative z-30">
             <div className="inline-flex items-center space-x-3 px-5 py-2.5 bg-white/80 glass-card rounded-full shadow-xl">
                <span className="flex h-3 w-3 rounded-full bg-rose-500 animate-ping"></span>
                <span className="text-slate-600 text-[10px] font-extrabold uppercase tracking-[0.3em]">Vertex AI Clinical Node</span>
@@ -85,7 +85,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
               </button>
             </div>
           </div>
-          <div className="lg:col-span-5 hidden lg:block animate-float">
+          
+          <div className="lg:col-span-5 hidden lg:block animate-float relative z-10">
              <div className="bg-white/90 glass-card rounded-[4rem] shadow-4xl p-12 space-y-10 border border-white/60">
                  <div className="flex items-center justify-between">
                     <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl flex items-center justify-center text-white text-3xl shadow-xl shadow-indigo-500/20"><i className="fas fa-signature"></i></div>
@@ -111,10 +112,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-32 relative z-10">
+      <section className="max-w-7xl mx-auto px-6 py-32 relative z-30">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {workflowSteps.map((step, i) => (
-            <div key={i} className="relative p-12 bg-white/70 glass-card rounded-[3.5rem] border border-slate-100 group hover:-translate-y-3 transition-all">
+            <div key={i} className="relative p-12 bg-white/70 glass-card rounded-[3.5rem] border border-slate-100 group hover:-translate-y-3 transition-all pointer-events-auto">
               <span className={`absolute top-10 right-10 text-5xl font-black opacity-5 group-hover:opacity-20 transition-opacity ${step.color.replace('bg-', 'text-')}`}>{step.num}</span>
               <div className={`w-16 h-16 ${step.color} text-white rounded-2xl flex items-center justify-center text-2xl mb-8 shadow-2xl`}>
                 <i className={`fas ${step.icon}`}></i>
@@ -126,7 +127,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
         </div>
       </section>
 
-      <footer className="py-24 px-6 md:px-12 border-t border-slate-100 bg-white relative z-10">
+      <footer className="py-24 px-6 md:px-12 border-t border-slate-100 bg-white relative z-30">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
           <div className="space-y-6">
             <div className="flex items-center justify-center md:justify-start space-x-3 cursor-pointer group" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
@@ -147,7 +148,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
                <button 
                 key={item.name} 
                 onClick={() => onNavigateInfo?.(item.type as any)}
-                className="text-[11px] font-black uppercase tracking-[0.2em] text-[#94a3b8] hover:text-indigo-600 transition-all cursor-pointer"
+                className="text-[11px] font-black uppercase tracking-[0.2em] text-[#94a3b8] hover:text-indigo-600 transition-all cursor-pointer relative z-10"
                >
                 {item.name}
                </button>
@@ -163,9 +164,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
         <div className="max-w-7xl mx-auto mt-20 pt-10 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">© 2026 MediDecode AI Clinical Portal • All Clinical Data Encrypted</p>
            <div className="flex space-x-8">
-              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-all text-lg"><i className="fab fa-twitter"></i></a>
-              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-all text-lg"><i className="fab fa-linkedin"></i></a>
-              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-all text-lg"><i className="fab fa-github"></i></a>
+              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-all text-lg cursor-pointer"><i className="fab fa-twitter"></i></a>
+              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-all text-lg cursor-pointer"><i className="fab fa-linkedin"></i></a>
+              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-all text-lg cursor-pointer"><i className="fab fa-github"></i></a>
            </div>
         </div>
       </footer>

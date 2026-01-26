@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { getChatResponse } from '../services/geminiService';
 import { ChatMessage, AnalysisResult, SupportedLanguage } from '../types';
@@ -40,23 +39,29 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
       setSuggestions(baseSuggestions[language] || baseSuggestions['English']);
     }
 
-    // Initialize Speech Recognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = language === 'Hindi' ? 'hi-IN' : 'en-US';
+    // Initialize Speech Recognition with desktop safety
+    try {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = language === 'Hindi' ? 'hi-IN' : 'en-US';
 
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setIsListening(false);
-        handleSend(transcript);
-      };
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          setInput(transcript);
+          setIsListening(false);
+          handleSend(transcript);
+        };
 
-      recognitionRef.current.onerror = () => setIsListening(false);
-      recognitionRef.current.onend = () => setIsListening(false);
+        recognition.onerror = () => setIsListening(false);
+        recognition.onend = () => setIsListening(false);
+        
+        recognitionRef.current = recognition;
+      }
+    } catch (e) {
+      console.warn("Speech recognition initialization failed. Secure context (HTTPS) may be required.", e);
     }
   }, [language, context]);
 
@@ -68,11 +73,21 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
 
   const toggleListening = () => {
     if (isListening) {
-      recognitionRef.current?.stop();
+      try {
+        recognitionRef.current?.stop();
+      } catch (e) {}
       setIsListening(false);
     } else {
-      recognitionRef.current?.start();
-      setIsListening(true);
+      try {
+        if (!recognitionRef.current) {
+          throw new Error("Recognition not available");
+        }
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (e) {
+        console.error("Failed to start listening", e);
+        setIsListening(false);
+      }
     }
   };
 
@@ -86,7 +101,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
 
     try {
       const response = await getChatResponse([...messages, userMsg], cleanText, context, language as SupportedLanguage);
-      setMessages(prev => [...prev, { role: 'model', text: response }]);
+      setMessages(prev => [...prev, { role: 'model', text: response || "I'm sorry, I couldn't understand that. Please try again." }]);
     } catch (error: any) {
       setMessages(prev => [...prev, { role: 'model', text: "Medical reasoning service is temporarily busy. Please try again." }]);
     } finally {
@@ -98,13 +113,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
     <>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-8 right-8 w-20 h-20 rounded-[2.5rem] shadow-4xl flex items-center justify-center transition-all z-50 border-[6px] border-white group chatbot-trigger ${isOpen ? 'bg-rose-500 scale-90' : 'bg-slate-900 hover:scale-110 active:scale-95 shadow-indigo-500/20'}`}
+        className={`fixed bottom-8 right-8 w-20 h-20 rounded-[2.5rem] shadow-4xl flex items-center justify-center transition-all z-50 border-[6px] border-white group chatbot-trigger pointer-events-auto ${isOpen ? 'bg-rose-500 scale-90' : 'bg-slate-900 hover:scale-110 active:scale-95 shadow-indigo-500/20'}`}
       >
         {isOpen ? <i className="fas fa-times text-2xl text-white"></i> : <i className="fas fa-stethoscope text-3xl text-white"></i>}
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-32 right-8 w-[520px] max-w-[calc(100vw-4rem)] h-[800px] max-h-[85vh] bg-white/95 backdrop-blur-3xl rounded-[3.5rem] shadow-4xl flex flex-col z-50 overflow-hidden border border-white/60 animate-in fade-in slide-in-from-bottom-12 duration-500 chatbot-window">
+        <div className="fixed bottom-32 right-8 w-[520px] max-w-[calc(100vw-4rem)] h-[800px] max-h-[85vh] bg-white/95 backdrop-blur-3xl rounded-[3.5rem] shadow-4xl flex flex-col z-50 overflow-hidden border border-white/60 animate-in fade-in slide-in-from-bottom-12 duration-500 chatbot-window pointer-events-auto">
           <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-950 p-10 text-white relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
             <div className="flex items-center relative z-10">
@@ -161,7 +176,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
                 <button 
                   key={i}
                   onClick={() => handleSend(s)}
-                  className="text-[9px] bg-slate-50 hover:bg-slate-900 hover:text-white text-slate-600 border border-slate-100 px-5 py-3 rounded-2xl transition-all font-black uppercase tracking-widest active:scale-95"
+                  className="text-[9px] bg-slate-50 hover:bg-slate-900 hover:text-white text-slate-600 border border-slate-100 px-5 py-3 rounded-2xl transition-all font-black uppercase tracking-widest active:scale-95 cursor-pointer"
                 >
                   {s}
                 </button>
