@@ -41,12 +41,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#fcfdff]">
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 px-6 md:px-10 py-4 ${scrolled ? 'bg-white/80 backdrop-blur-3xl border-b border-slate-100 py-3 shadow-lg shadow-indigo-500/5' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
             <LogoMark />
-            <span className="font-black text-2xl tracking-tighter text-slate-900">MediDecode <span className="text-indigo-600">AI</span></span>
+            <span className="font-black text-2xl tracking-tighter text-slate-900 uppercase">MediDecode <span className="text-indigo-600">AI</span></span>
           </div>
           <div className="flex items-center space-x-6">
             <button onClick={onLoginClick} className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors">Portal Access</button>
@@ -121,67 +121,52 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
         </div>
       </section>
 
-      <section className="bg-slate-900 py-32 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-500 blur-[150px] -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-rose-500 blur-[150px] translate-x-1/2 translate-y-1/2"></div>
-        </div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center space-y-6 mb-24">
-            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter">Clinical Excellence Features</h2>
-            <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.4em]">Integrated Health Matrix</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((f, i) => (
-              <div key={i} className={`p-10 rounded-[3rem] border transition-all hover:scale-105 ${f.theme}`}>
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-8 bg-white shadow-lg">
-                  <i className={`fas ${f.icon}`}></i>
-                </div>
-                <h3 className="text-xl font-black mb-4">{f.title}</h3>
-                <p className="opacity-80 text-sm font-bold leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      {/* REFINED FOOTER SECTION MATCHING IMAGE */}
       <footer className="py-24 px-6 md:px-12 border-t border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
+          
+          {/* BRAND AREA */}
           <div className="space-y-6">
-            <div className="flex items-center justify-center md:justify-start space-x-3 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+            <div className="flex items-center justify-center md:justify-start space-x-3 cursor-pointer group" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
                <LogoMark />
-               <span className="font-black text-2xl tracking-tighter">MediDecode <span className="text-indigo-600">AI</span></span>
+               <span className="font-black text-2xl tracking-tighter uppercase text-slate-900">MediDecode <span className="text-indigo-600">AI</span></span>
             </div>
             <p className="text-slate-400 text-sm font-medium max-w-sm leading-relaxed">
                Global pioneer in transparent clinical interpretation through Vertex AI logic.
             </p>
           </div>
-          <div className="flex gap-8">
+
+          {/* DYNAMIC NAVIGATION LINKS - MATCHING IMAGE CAPITALIZATION */}
+          <div className="flex flex-wrap justify-center gap-8 md:gap-16">
              {[
-               { name: 'Privacy', type: 'privacy' },
-               { name: 'Standards', type: 'standards' },
-               { name: 'Support', type: 'contact' }
+               { name: 'PRIVACY', type: 'privacy' },
+               { name: 'STANDARDS', type: 'standards' },
+               { name: 'SUPPORT', type: 'contact' }
              ].map(item => (
                <button 
                 key={item.name} 
                 onClick={() => onNavigateInfo?.(item.type as any)}
-                className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors"
+                className="text-[11px] font-black uppercase tracking-[0.2em] text-[#94a3b8] hover:text-indigo-600 transition-all"
                >
                 {item.name}
                </button>
              ))}
           </div>
-          <div className="bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100 flex items-center space-x-3">
-            <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></span>
-            <span className="text-[10px] font-black uppercase text-emerald-700 tracking-[0.2em]">Node Online</span>
+
+          {/* NODE ONLINE PILL - MATCHING IMAGE */}
+          <div className="bg-[#f0fdf4] px-10 py-4 rounded-3xl border border-[#dcfce7] flex items-center space-x-4 shadow-sm">
+            <span className="w-3 h-3 bg-[#22c55e] rounded-full shadow-[0_0_12px_#22c55e]"></span>
+            <span className="text-[11px] font-black uppercase text-[#166534] tracking-[0.3em]">Node Online</span>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
-           <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">© 2026 MediDecode AI Clinical Portal • All Data Protected</p>
-           <div className="flex space-x-6">
-              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-colors"><i className="fab fa-twitter"></i></a>
-              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-colors"><i className="fab fa-linkedin"></i></a>
-              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-colors"><i className="fab fa-github"></i></a>
+
+        {/* COPYRIGHT & SOCIAL - UPDATED TO 2026 */}
+        <div className="max-w-7xl mx-auto mt-20 pt-10 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
+           <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">© 2026 MediDecode AI Clinical Portal • All Clinical Data Encrypted</p>
+           <div className="flex space-x-8">
+              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-all text-lg"><i className="fab fa-twitter"></i></a>
+              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-all text-lg"><i className="fab fa-linkedin"></i></a>
+              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-all text-lg"><i className="fab fa-github"></i></a>
            </div>
         </div>
       </footer>
