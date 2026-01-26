@@ -8,30 +8,55 @@ interface ChatBotProps {
   language?: SupportedLanguage;
 }
 
+// Add types for Web Speech API
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
+
 const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     const baseSuggestions: Record<string, string[]> = {
-      'English': ["How do I upload a scan?", "What can this AI detect?", "Tips for record keeping"],
-      'Hindi': ["स्कैन कैसे अपलोड करें?", "यह AI क्या पहचान सकता है?", "रिकॉर्ड रखने के टिप्स"]
+      'English': ["What medicines were found?", "Explain dosage for drug X", "Check interactions"],
+      'Hindi': ["कौन सी दवाएं मिलीं?", "खुराक समझाएं", "खतरे की चेतावनी?"]
     };
 
     if (context && context.medicines && context.medicines.length > 0) {
       const medName = context.medicines[0].name;
-      setSuggestions([
-        `Interactions for ${medName}?`,
-        `Missed dose of ${medName}?`,
-        `Side effects of ${medName}?`
-      ]);
+      setSuggestions([`What is ${medName}?`, `Is ${medName} safe for me?`, "Health advice"]);
     } else {
       setSuggestions(baseSuggestions[language] || baseSuggestions['English']);
+    }
+
+    // Initialize Speech Recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = language === 'Hindi' ? 'hi-IN' : 'en-US';
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsListening(false);
+        handleSend(transcript);
+      };
+
+      recognitionRef.current.onerror = () => setIsListening(false);
+      recognitionRef.current.onend = () => setIsListening(false);
     }
   }, [language, context]);
 
@@ -41,29 +66,29 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
     }
   }, [messages, isTyping]);
 
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current?.start();
+      setIsListening(true);
+    }
+  };
+
   const handleSend = async (text: string) => {
-    if (!text.trim()) return;
-    
-    const userMsg: ChatMessage = { role: 'user', text };
+    const cleanText = text.trim();
+    if (!cleanText) return;
+    const userMsg: ChatMessage = { role: 'user', text: cleanText };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
 
     try {
-      // Fix: Added explicit cast for language to SupportedLanguage to match service signature
-      const response = await getChatResponse(messages, text, context, language as SupportedLanguage);
-      const parts = response.split('[SUGGESTION]');
-      const mainText = parts[0].trim();
-      const newSuggestions = parts.slice(1).map(s => s.trim().replace(/^[-*]\s*/, ''));
-
-      setMessages(prev => [...prev, { role: 'model', text: mainText }]);
-      if (newSuggestions.length > 0) setSuggestions(newSuggestions);
+      const response = await getChatResponse(messages, cleanText, context, language as SupportedLanguage);
+      setMessages(prev => [...prev, { role: 'model', text: response }]);
     } catch (error: any) {
-      console.error("Chat Error:", error);
-      const errorMsg = error.message?.includes('fetch') 
-        ? "Network connection error. Please check your internet and try again."
-        : "The service is currently overwhelmed. Please wait a moment and try again.";
-      setMessages(prev => [...prev, { role: 'model', text: errorMsg }]);
+      setMessages(prev => [...prev, { role: 'model', text: "Medical reasoning node unreachable. Please retry shortly." }]);
     } finally {
       setIsTyping(false);
     }
@@ -73,48 +98,43 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
     <>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-slate-900 text-white rounded-3xl shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50 border-4 border-white group overflow-hidden chatbot-trigger"
+        className={`fixed bottom-8 right-8 w-20 h-20 rounded-[2.5rem] shadow-4xl flex items-center justify-center transition-all z-50 border-[6px] border-white group chatbot-trigger ${isOpen ? 'bg-rose-500 scale-90' : 'bg-slate-900 hover:scale-110 active:scale-95 shadow-indigo-500/20'}`}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        {isOpen ? <i className="fas fa-times text-xl relative z-10"></i> : <i className="fas fa-stethoscope text-2xl relative z-10"></i>}
+        {isOpen ? <i className="fas fa-times text-2xl text-white"></i> : <i className="fas fa-stethoscope text-3xl text-white"></i>}
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-3rem)] h-[600px] bg-white rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] flex flex-col z-50 overflow-hidden border border-slate-100 animate-in fade-in slide-in-from-bottom-8 duration-500 chatbot-window">
-          <div className="bg-slate-900 p-8 text-white relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+        <div className="fixed bottom-32 right-8 w-[480px] max-w-[calc(100vw-4rem)] h-[780px] max-h-[85vh] bg-white/95 backdrop-blur-3xl rounded-[4rem] shadow-4xl flex flex-col z-50 overflow-hidden border border-white/60 animate-in fade-in slide-in-from-bottom-12 duration-500 chatbot-window">
+          <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-950 p-10 text-white relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
             <div className="flex items-center relative z-10">
-              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mr-4 backdrop-blur-md border border-white/10">
-                <i className="fas fa-user-md text-blue-400"></i>
+              <div className="w-16 h-16 bg-white/10 rounded-[1.5rem] flex items-center justify-center mr-6 backdrop-blur-md border border-white/20">
+                <i className={`fas ${isListening ? 'fa-microphone text-rose-400 animate-pulse' : 'fa-robot text-rose-400'} text-2xl`}></i>
               </div>
               <div>
-                <h3 className="font-black text-xs uppercase tracking-widest text-blue-400">MediDecode Concierge</h3>
-                <div className="flex items-center mt-1">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2 shadow-[0_0_8px_#10b981]"></div>
-                  <p className="text-[10px] font-black uppercase tracking-tighter opacity-60">Live Help</p>
+                <h3 className="font-black text-sm uppercase tracking-widest text-rose-400">Clinical Concierge</h3>
+                <div className="flex items-center mt-2">
+                  <div className={`w-2.5 h-2.5 rounded-full mr-2.5 ${isListening ? 'bg-rose-500 animate-ping' : 'bg-emerald-500 shadow-[0_0_12px_#10b981]'}`}></div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{isListening ? 'Listening to voice...' : 'Grounded Logic Active'}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/30">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-12 space-y-10 bg-slate-50/20">
             {messages.length === 0 && (
-              <div className="text-center py-10 px-4">
-                <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner">
-                   <i className="fas fa-comment-medical text-2xl"></i>
-                </div>
-                <h4 className="text-slate-900 font-black text-sm uppercase tracking-tight mb-2">How can I assist?</h4>
-                <p className="text-slate-500 text-xs font-medium leading-relaxed italic italic">
-                  Ask me anything about the scan results or app usage.
-                </p>
+              <div className="text-center py-20 px-8 space-y-8">
+                <div className="w-24 h-24 bg-white rounded-[2.5rem] shadow-xl border border-slate-100 flex items-center justify-center mx-auto text-indigo-600 text-4xl"><i className="fas fa-comment-medical"></i></div>
+                <h4 className="text-slate-900 font-black text-2xl tracking-tight">How can I assist you?</h4>
+                <p className="text-slate-500 text-sm font-medium leading-relaxed italic">Ask questions about your meds, lab statuses, or interaction warnings. Voice input is active.</p>
               </div>
             )}
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-5 rounded-[1.5rem] text-sm font-semibold leading-relaxed ${
+                <div className={`max-w-[90%] p-6 rounded-[2.5rem] text-sm font-bold leading-relaxed shadow-lg ${
                   m.role === 'user' 
-                    ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20 rounded-br-none' 
-                    : 'bg-white text-slate-700 shadow-sm border border-slate-100 rounded-bl-none'
+                    ? 'bg-gradient-to-br from-indigo-600 to-indigo-800 text-white rounded-br-none' 
+                    : 'bg-white text-slate-700 border border-slate-100 rounded-bl-none'
                 }`}>
                   {m.text}
                 </div>
@@ -122,38 +142,46 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
             ))}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 flex space-x-1.5">
-                  <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                  <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex space-x-2">
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                  <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="p-8 border-t bg-white">
-            <div className="flex flex-wrap gap-2 mb-6">
+          <div className="p-10 border-t border-slate-100 bg-white">
+            <div className="flex flex-wrap gap-2.5 mb-8">
               {suggestions.map((s, i) => (
                 <button 
                   key={i}
                   onClick={() => handleSend(s)}
-                  className="text-[10px] bg-slate-50 hover:bg-slate-900 hover:text-white text-slate-500 border border-slate-100 px-4 py-2 rounded-xl transition-all font-black uppercase tracking-tighter truncate max-w-full"
+                  className="text-[9px] bg-slate-50 hover:bg-slate-900 hover:text-white text-slate-600 border border-slate-100 px-5 py-3 rounded-2xl transition-all font-black uppercase tracking-widest"
                 >
                   {s}
                 </button>
               ))}
             </div>
-            <div className="flex items-center bg-slate-100 rounded-2xl px-5 py-4 border border-slate-200 focus-within:border-blue-500 focus-within:bg-white transition-all shadow-inner">
+            
+            <div className={`flex items-center bg-slate-100 rounded-[2rem] px-6 py-5 border transition-all ${input.trim() || isListening ? 'border-indigo-500 bg-white shadow-2xl ring-8 ring-indigo-500/5' : 'border-slate-200'}`}>
+              <button 
+                onClick={toggleListening}
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isListening ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-200 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600'}`}
+              >
+                <i className={`fas ${isListening ? 'fa-microphone-lines' : 'fa-microphone'}`}></i>
+              </button>
               <input 
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend(input)}
-                placeholder="Ask your health query..."
-                className="bg-transparent flex-1 text-sm outline-none font-bold text-slate-700 placeholder:text-slate-400"
+                placeholder={isListening ? "Listening now..." : "Ask MediDecode AI..."}
+                className="bg-transparent flex-1 text-sm outline-none font-bold text-slate-700 placeholder:text-slate-400 ml-5"
               />
               <button 
                 onClick={() => handleSend(input)}
-                className="text-blue-600 hover:text-blue-700 transition-colors ml-3 w-10 h-10 rounded-xl flex items-center justify-center hover:bg-blue-50"
+                disabled={!input.trim()}
+                className={`ml-5 w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${input.trim() ? 'bg-indigo-600 text-white shadow-xl rotate-0' : 'text-slate-300'}`}
               >
                 <i className="fas fa-paper-plane"></i>
               </button>

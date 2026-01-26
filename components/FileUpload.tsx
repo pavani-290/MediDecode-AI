@@ -1,172 +1,161 @@
 
 import React, { useState, useRef } from 'react';
+import QRScanner from './QRScanner';
 
 interface FileUploadProps {
   onUpload: (base64: string, mimeType: string) => void;
   isAnalyzing: boolean;
-  onPreviewChange?: (url: string | null) => void;
+  onPreviewChange?: (url: string | null, type: string) => void;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isAnalyzing, onPreviewChange }) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showQRScanner, setShowQRScanner] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 2500; 
+          if (width > height && width > maxDim) {
+            height *= maxDim / width;
+            width = maxDim;
+          } else if (height > maxDim) {
+            width *= maxDim / height;
+            height = maxDim;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.9).split(',')[1]);
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError("File is too large. For faster results and stability, please upload an image under 5MB.");
+      if (file.size > 50 * 1024 * 1024) {
+        setError("FILE EXCEEDS 50MB LIMIT");
         return;
       }
-      
       setError(null);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        setPreview(reader.result as string);
-        if (onPreviewChange) onPreviewChange(reader.result as string);
+      try {
+        const previewUrl = file.type.includes('pdf') ? 'https://cdn-icons-png.flaticon.com/512/337/337946.png' : URL.createObjectURL(file);
+        setPreview(previewUrl);
+        let base64 = "";
+        if (!file.type.includes('pdf')) {
+          base64 = await compressImage(file);
+        } else {
+          base64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+            reader.readAsDataURL(file);
+          });
+        }
+        if (onPreviewChange) onPreviewChange(previewUrl, file.type);
         onUpload(base64, file.type);
-      };
-      reader.onerror = () => setError("Failed to read file. Please try again.");
-      reader.readAsDataURL(file);
+      } catch (err) {
+        setError("Processing Error. Try high-res scan.");
+      }
     }
   };
 
-  const triggerInput = () => fileInputRef.current?.click();
-
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 space-y-8 no-print">
+    <div className="w-full max-w-5xl mx-auto px-4 space-y-16 no-print">
       <div 
-        onClick={!isAnalyzing ? triggerInput : undefined}
-        className={`group relative overflow-hidden border-2 border-dashed rounded-[2.5rem] p-12 flex flex-col items-center justify-center transition-all duration-500 cursor-pointer ${
-          isAnalyzing ? 'bg-slate-50 border-slate-200 cursor-default' : 'bg-white border-blue-200 hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-500/10'
+        className={`group relative overflow-hidden rounded-[4rem] p-12 md:p-24 flex flex-col items-center justify-center transition-all duration-700 glass-card border-4 ${
+          isAnalyzing ? 'border-rose-400/50 shadow-2xl shadow-rose-500/10' : 'border-white/60 hover:border-indigo-500/50 hover:shadow-4xl shadow-2xl'
         }`}
       >
-        <input type="file" className="hidden" ref={fileInputRef} accept="image/*" onChange={handleFileChange} disabled={isAnalyzing} />
+        <input type="file" className="hidden" ref={fileInputRef} accept="image/*,.pdf" onChange={handleFileChange} disabled={isAnalyzing} />
         
-        {preview ? (
-          <div className="text-center w-full">
-            <div className="relative w-full mb-8">
-              <img src={preview} alt="Document" className="max-h-80 mx-auto rounded-3xl shadow-lg border border-slate-100" />
-              {isAnalyzing && (
-                <div className="absolute inset-0 overflow-hidden rounded-3xl">
-                  <div className="w-full h-1.5 bg-blue-500 shadow-[0_0_15px_#3b82f6] absolute top-0 left-0 animate-scan"></div>
-                  <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-[1px]"></div>
-                </div>
-              )}
+        {isAnalyzing && (
+          <div className="absolute inset-0 bg-white/40 backdrop-blur-md z-20 flex flex-col items-center justify-center space-y-8">
+            <div className="w-32 h-32 bg-indigo-600 rounded-[2.5rem] flex items-center justify-center text-white text-4xl shadow-3xl animate-pulse">
+               <i className="fas fa-brain"></i>
             </div>
-            
-            <div className={`inline-flex items-center space-x-3 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl ${
-              isAnalyzing ? 'bg-indigo-600 text-white animate-pulse' : 'bg-slate-900 text-white hover:bg-blue-600'
-            }`}>
-              {isAnalyzing ? (
-                <>
-                  <i className="fas fa-spinner fa-spin text-lg"></i>
-                  <span>Analyzing Report...</span>
-                </>
-              ) : (
-                <>
-                  <i className="fas fa-redo"></i>
-                  <span>Upload Different File</span>
-                </>
-              )}
+            <div className="text-center space-y-3">
+              <h4 className="text-2xl font-black text-slate-900 tracking-tight">Deciphering Handwriting...</h4>
+              <p className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em]">Vertex Clinical Node in Progress</p>
+            </div>
+          </div>
+        )}
+
+        {preview ? (
+          <div className="text-center w-full animate-in zoom-in-95 duration-500 relative z-10">
+            <div className="relative inline-block">
+               <img src={preview} alt="Doc" className="max-h-96 rounded-[3rem] shadow-4xl border-[12px] border-white mx-auto mb-10" />
+               <div className="absolute top-0 left-0 w-full h-full rounded-[3rem] border-2 border-indigo-500/20 pointer-events-none"></div>
+            </div>
+            <div className="flex justify-center space-x-4">
+              <button onClick={() => fileInputRef.current?.click()} className="bg-slate-900 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 transition-all shadow-xl">Replace Document</button>
             </div>
           </div>
         ) : (
-          <div className="text-center">
-            <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-[2rem] flex items-center justify-center mb-6 mx-auto group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 shadow-inner">
-              <i className="fas fa-camera-retro text-3xl"></i>
+          <div className="text-center relative z-10 space-y-10">
+            <div className="w-28 h-28 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-[2.5rem] flex items-center justify-center mb-10 mx-auto text-white text-4xl shadow-2xl group-hover:rotate-6 transition-all duration-500">
+              <i className="fas fa-file-medical"></i>
             </div>
-            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Prescription Scanner</h3>
-            <p className="text-slate-400 text-sm mt-3 max-w-xs mx-auto font-medium leading-relaxed">
-              Upload a clear photo. <br/>
-              <span className="text-blue-500 font-bold">Recommended size: 1MB - 3MB for fastest results.</span>
-            </p>
-            {error && (
-              <div className="mt-4 p-3 bg-rose-50 border border-rose-100 rounded-xl">
-                <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest">{error}</p>
-              </div>
-            )}
+            <div className="space-y-4">
+              <h3 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">Portal Upload</h3>
+              <p className="text-slate-500 text-base font-medium max-w-sm mx-auto leading-relaxed opacity-70">Decipher messy handwriting and shorthand from prescriptions or lab reports up to 50MB.</p>
+            </div>
             
-            <div className={`mt-10 inline-flex items-center space-x-3 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl ${
-              isAnalyzing ? 'bg-indigo-600 text-white opacity-50' : 'bg-slate-900 text-white hover:bg-blue-600'
-            }`}>
-              {isAnalyzing ? (
-                <i className="fas fa-spinner fa-spin text-lg"></i>
-              ) : (
-                <i className="fas fa-cloud-upload-alt"></i>
-              )}
-              <span>{isAnalyzing ? 'Processing...' : 'Select File'}</span>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-6">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-slate-900 text-white px-14 py-7 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.3em] shadow-4xl hover:bg-indigo-600 hover:-translate-y-1.5 transition-all active:scale-95"
+              >
+                <i className="fas fa-camera mr-4"></i>
+                Upload Clinical Doc
+              </button>
+              <button 
+                onClick={() => setShowQRScanner(true)}
+                className="bg-white text-indigo-600 border-2 border-indigo-100 px-14 py-7 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.3em] shadow-xl hover:bg-indigo-50 transition-all active:scale-95"
+              >
+                <i className="fas fa-qrcode mr-4"></i>
+                Scan QR Portal
+              </button>
             </div>
-            <p className="mt-4 text-[9px] font-black text-slate-300 uppercase tracking-widest">Maximum File Size: 5MB</p>
+
+            <div className="flex justify-center space-x-6">
+              <span className="flex items-center space-x-2 text-[10px] font-black uppercase text-indigo-400 tracking-widest"><i className="fas fa-check-circle"></i> <span>Prescription</span></span>
+              <span className="flex items-center space-x-2 text-[10px] font-black uppercase text-rose-400 tracking-widest"><i className="fas fa-check-circle"></i> <span>Lab Report</span></span>
+              <span className="flex items-center space-x-2 text-[10px] font-black uppercase text-emerald-400 tracking-widest"><i className="fas fa-check-circle"></i> <span>PDF (50MB)</span></span>
+            </div>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-emerald-50 p-4 rounded-2xl flex items-center space-x-4 border border-emerald-100">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-500 shadow-sm"><i className="fas fa-sun"></i></div>
-          <span className="text-xs font-bold text-emerald-800 uppercase tracking-tighter">Use Bright Light</span>
-        </div>
-        <div className="bg-amber-50 p-4 rounded-2xl flex items-center space-x-4 border border-amber-100">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-500 shadow-sm"><i className="fas fa-compress-arrows-alt"></i></div>
-          <span className="text-xs font-bold text-amber-800 uppercase tracking-tighter">Crop to Text</span>
-        </div>
-        <div className="bg-indigo-50 p-4 rounded-2xl flex items-center space-x-4 border border-indigo-100">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-indigo-500 shadow-sm"><i className="fas fa-bolt"></i></div>
-          <span className="text-xs font-bold text-indigo-800 uppercase tracking-tighter">Fast Analysis</span>
-        </div>
-      </div>
-
-      {!preview && !isAnalyzing && (
-        <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
-          <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center">
-            <i className="fas fa-lightbulb text-amber-500 mr-3"></i> 
-            Pro-Tips for Speed & Success
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <span className="bg-blue-100 text-blue-600 text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Resolution</span>
-                <i className="fas fa-mobile-alt text-slate-300"></i>
-              </div>
-              <p className="text-slate-500 text-[11px] leading-relaxed font-medium">
-                Standard smartphone photos (**1080p to 2K**) are perfect. You don't need 4K; smaller clear photos process much faster.
-              </p>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <span className="bg-indigo-100 text-indigo-600 text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Cropping</span>
-                <i className="fas fa-crop text-slate-300"></i>
-              </div>
-              <p className="text-slate-500 text-[11px] leading-relaxed font-medium">
-                If the prescription is small but the paper is large, **crop the image to just the text section** to speed up AI recognition.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <span className="bg-emerald-100 text-emerald-600 text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Format</span>
-                <i className="fas fa-image text-slate-300"></i>
-              </div>
-              <p className="text-slate-500 text-[11px] leading-relaxed font-medium">
-                **Use JPG instead of PNG** when possible. JPG compresses medical documents better without losing the clarity of the handwriting.
-              </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {[
+          { icon: 'fa-shield-halved', title: 'Privacy Matrix', desc: 'Clinical data is cleared immediately after session node ends.', theme: 'bg-indigo-600' },
+          { icon: 'fa-microscope', title: 'Deep Logic', desc: 'Gemini 3 Flash identifies shorthand patterns like TDS or p.c.', theme: 'bg-rose-500' },
+          { icon: 'fa-language', title: 'Global Reach', desc: 'Instant native translation into 12+ clinical dialects.', theme: 'bg-emerald-500' }
+        ].map((item, i) => (
+          <div key={i} className="bg-white/60 glass-card p-10 rounded-[3rem] border border-white/80 shadow-lg flex items-start space-x-6 hover:-translate-y-2 transition-all">
+            <div className={`w-14 h-14 ${item.theme} text-white rounded-2xl flex items-center justify-center text-xl shadow-xl shrink-0`}><i className={`fas ${item.icon}`}></i></div>
+            <div className="space-y-2">
+               <h5 className="font-black text-slate-900 text-sm tracking-tight">{item.title}</h5>
+               <p className="text-xs text-slate-500 font-medium leading-relaxed">{item.desc}</p>
             </div>
           </div>
-        </div>
-      )}
-      
-      {isAnalyzing && (
-        <div className="mt-10 text-center animate-pulse">
-          <p className="text-slate-800 font-black text-xs uppercase tracking-[0.3em]">Deciphering Clinical Data with Gemini Flash...</p>
-          <p className="text-slate-400 text-[10px] font-bold mt-2 italic">Large files may take up to 15 seconds to process.</p>
-        </div>
-      )}
+        ))}
+      </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `@keyframes scan {0% {top: 0%;} 100% {top: 100%;}} .animate-scan {animation: scan 2.5s ease-in-out infinite;}` }} />
+      {showQRScanner && <QRScanner onScan={() => setShowQRScanner(false)} onClose={() => setShowQRScanner(false)} />}
     </div>
   );
 };

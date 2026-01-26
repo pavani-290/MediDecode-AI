@@ -3,6 +3,7 @@
   "description": "Turning Medical Handwriting into Clear Understanding. An AI-powered assistant that deciphers handwritten medical prescriptions and complex lab reports.",
   "requestFramePermissions": [
     "camera",
+    "microphone",
     "geolocation"
   ]
 }

@@ -5,8 +5,15 @@ export interface MedicineInfo {
   usage: string;
   sideEffects: string[];
   warnings: string;
-  dosageStatus: string; // "clear" or "Dosage unclear from image"
+  dosageStatus: string;
   interactionWarning?: string;
+  schedule?: {
+    morning: boolean;
+    afternoon: boolean;
+    evening: boolean;
+    night: boolean;
+    beforeFood: boolean;
+  };
 }
 
 export interface LabResult {
@@ -18,21 +25,15 @@ export interface LabResult {
   explanation: string;
 }
 
-export interface ShorthandExpansion {
-  term: string;
-  meaning: string;
-}
-
 export interface AnalysisResult {
   summary: string;
   medicines: MedicineInfo[];
   labResults?: LabResult[];
   keyRecommendations: string[];
-  shorthandDecoded?: ShorthandExpansion[];
-  timestamp?: number;
-  language?: string;
-  confidenceScore?: number;
-  ocrNotes?: string;
+  interactionMatrix?: string;
+  confidenceScore: number;
+  timestamp: number;
+  language: string;
 }
 
 export interface ChatMessage {
@@ -49,6 +50,7 @@ export interface HistoryItem {
   id: string;
   data: AnalysisResult;
   previewUrl: string;
+  fileType: string;
 }
 
 export interface PatientProfile {

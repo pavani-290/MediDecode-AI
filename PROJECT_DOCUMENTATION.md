@@ -1,41 +1,42 @@
-# MediDecode AI: Project & AI Integration Documentation
+# MediDecode AI: Detailed Project Documentation
 
 ## 1. Project Overview
-MediDecode AI is a next-generation medical literacy tool designed to simplify clinical communications for patients. By combining **Google Vision AI** and **Generative Grounding**, it transforms complex medical documents into actionable knowledge.
+MediDecode AI is a professional medical analysis portal that leverages **Vertex AI-grade models** to bridge the gap between complex medical shorthand and patient understanding. It transforms messy prescriptions and confusing lab reports into clear, actionable knowledge.
 
-## 2. Integrated Google AI Technologies
+## 2. Featured Solution Modules
 
-### A. Computer Vision & Handwriting Recognition
-Powered by **Gemini 3 Flash**, the application utilizes advanced vision-to-text processing. 
-- **Major Role**: It deciphers "Doctor's Handwriting," which is notoriously difficult for traditional systems. The model uses clinical context (e.g., surrounding symptoms or lab values) to accurately predict illegible words.
+### ✍️ Handwriting Deciphering
+Reads messy doctor penmanship and clinical abbreviations (e.g., "HS", "AC", "PRN") that standard scanners ignore. It uses high-resolution vision analysis to ensure even faded text is interpreted correctly.
 
-### B. Real-World Grounding (Google Maps)
-Unlike standard chatbots, MediDecode AI is "grounded" in reality.
-- **Integration**: The app uses the **Google Maps tool** via **Gemini 2.5 Flash**.
-- **Function**: When a user shares their location, the AI doesn't just "guess" where pharmacies are; it retrieves verified listings, addresses, and navigation links directly from Google's live maps database.
+### 🗣️ Human-Centric Explanations
+Translates complex medical jargon like "Hypokalemia" into plain language like "Low Potassium levels in the blood." This ensures patients understand the "Why" behind their diagnosis.
 
-### C. Contextual Multilingual Translation
-Translation is handled by **Gemini 3 Flash** to ensure medical accuracy.
-- **Role**: Translating "TDS" (Three times a day) correctly into "दिन में तीन बार" (Hindi) or "Tres veces al día" (Spanish) while maintaining the clinical weight of the instruction.
+### 📅 Visual Dose Mapping
+Automatically maps drug instructions into a color-coded **Morning / Afternoon / Evening / Night** chart. It identifies timing instructions (e.g., "before food") and places them in the appropriate visual slot.
 
-### D. Audio Synthesis (Text-to-Speech)
-The **Gemini 2.5 Flash TTS** model is used to create an inclusive experience.
-- **Role**: It converts the decoded summary into a natural voice, allowing patients to listen to their prescription details on the go.
+### 📊 Smart Lab Interpretation
+Classifies blood/lab results as **Normal, Borderline, High, or Low** with immediate visual status indicators and colored progress bars, helping patients identify red flags instantly.
 
-## 3. Key Functional Modules
+### 📍 GPS-Strict Pharmacy Finder
+Uses exact user coordinates to pinpoint the 3 closest verified pharmacies. This feature is strictly grounded via Google Maps to prevent the AI from suggesting "random" or non-existent locations.
 
-| Module | Google Tech Used | Technical Implementation |
-| :--- | :--- | :--- |
-| **OCR Scanner** | Gemini 3 Flash | Multimodal input (image + text prompt) with JSON schema output. |
-| **Pharmacy Locator** | Gemini 2.5 Flash + Maps | Grounding metadata extraction from lat/lng coordinates. |
-| **AI Concierge** | Gemini 3 Flash | Stateful chat session with system instructions for medical safety. |
-| **PDF Export** | Browser Native | Dynamic CSS injection for mobile-responsive print layouts. |
-| **Offline Access** | PWA Service Workers | Caching logic for 24/7 availability on mobile devices. |
+### 🔊 AI Audio Summaries
+Generates audible "Audio Reports" for summaries, improving accessibility for elderly users or those who prefer listening over reading.
 
-## 4. Medical Safety & Accuracy
-Safety is at the core of our AI integration:
-- **Safety Filters**: Configured with `BLOCK_NONE` for clinical categories to prevent false blocks of valid medical terms (like 'blood' or 'surgery').
-- **Explicit Disclaimers**: The AI is instructed to always remind users that it is an "Educational Assistant" and not a "Doctor."
+### 🛡️ Safety Matrix
+Cross-references all medications in a scan to detect and warn against dangerous **drug-drug interactions**, providing a clinical safety net before the patient takes their medication.
 
-## 5. Summary of Innovation
-The major innovation of MediDecode AI lies in its ability to combine **Vision**, **Reasoning**, **Location**, and **Voice** into a single, unified patient experience—all powered by the **Google Gemini API**.
+### 🌍 12+ Native Languages
+Supports accurate one-click translation into Hindi, Bengali, Tamil, Spanish, Arabic, French, and more, making healthcare clarity global.
+
+### 🤖 24/7 Health Concierge
+A dedicated AI chatbot for follow-up questions regarding the decoded report, allowing users to ask "Can I take this with milk?" or "What does HbA1c mean?"
+
+### 📄 Professional PDF Exports
+One-click generation of clean, professional reports formatted for printing or sharing with family and other healthcare providers.
+
+## 3. Technical Safeguards & Grounding
+The application implements **Strict Grounding Protocols**. The Pharmacy Finder is strictly locked to the user's verified location. If location services are disabled, the app provides a clinical warning and pauses discovery until permission is granted to prevent incorrect results.
+
+## 4. Privacy & Data Security
+MediDecode AI follows a "Zero Data Retention" policy. Scans are processed in volatile memory and are cleared after the session ends, unless the user manually saves them to their local, secure IndexedDB history.

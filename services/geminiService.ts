@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type, Chat, GenerateContentResponse, Modality } from "@google/genai";
+import { GoogleGenAI, Type, Chat, Modality } from "@google/genai";
 import { AnalysisResult, SupportedLanguage, PatientProfile, ChatMessage } from "../types";
 
 const ANALYSIS_SCHEMA = {
@@ -16,13 +16,20 @@ const ANALYSIS_SCHEMA = {
           usage: { type: Type.STRING },
           sideEffects: { type: Type.ARRAY, items: { type: Type.STRING } },
           warnings: { type: Type.STRING },
-          dosageStatus: { 
-            type: Type.STRING, 
-            description: "If dosage is clearly visible, provide it. If the handwriting is illegible or dosage is missing, strictly return: 'Dosage unclear from image'." 
-          },
-          interactionWarning: { type: Type.STRING, description: "Check if detected medicines conflict with each other." }
+          dosageStatus: { type: Type.STRING },
+          interactionWarning: { type: Type.STRING },
+          schedule: {
+            type: Type.OBJECT,
+            properties: {
+              morning: { type: Type.BOOLEAN },
+              afternoon: { type: Type.BOOLEAN },
+              evening: { type: Type.BOOLEAN },
+              night: { type: Type.BOOLEAN },
+              beforeFood: { type: Type.BOOLEAN }
+            }
+          }
         },
-        required: ["name", "purpose", "usage", "sideEffects", "warnings", "dosageStatus"]
+        required: ["name", "purpose", "usage", "dosageStatus"]
       }
     },
     labResults: {
@@ -36,29 +43,16 @@ const ANALYSIS_SCHEMA = {
           referenceRange: { type: Type.STRING },
           status: { type: Type.STRING, enum: ["Normal", "Borderline", "High", "Low"] },
           explanation: { type: Type.STRING }
-        },
-        required: ["parameter", "value", "unit", "referenceRange", "status", "explanation"]
+        }
       }
     },
-    shorthandDecoded: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          term: { type: Type.STRING },
-          meaning: { type: Type.STRING }
-        },
-        required: ["term", "meaning"]
-      }
-    },
+    interactionMatrix: { type: Type.STRING, description: "Detailed check of how all detected meds interact." },
     keyRecommendations: { type: Type.ARRAY, items: { type: Type.STRING } },
-    confidenceScore: { type: Type.INTEGER },
-    ocrNotes: { type: Type.STRING }
+    confidenceScore: { type: Type.INTEGER }
   },
   required: ["summary", "medicines", "keyRecommendations", "confidenceScore"]
 };
 
-// Configuration to prevent medical queries from being blocked by safety filters
 const SAFETY_SETTINGS = [
   { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
   { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
@@ -66,57 +60,61 @@ const SAFETY_SETTINGS = [
   { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
 ];
 
-/**
- * Helper to handle retries for transient network errors.
- */
-async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
-  try {
-    return await fn();
-  } catch (error: any) {
-    const isNetworkError = error instanceof TypeError || error.message?.toLowerCase().includes('fetch');
-    const isServerError = error.status >= 500;
-    
-    if (retries > 0 && (isNetworkError || isServerError)) {
-      console.warn(`Retry attempt left: ${retries}. Error: ${error.message}`);
-      await new Promise(r => setTimeout(r, 1500));
-      return withRetry(fn, retries - 1);
-    }
-    throw error;
-  }
-}
-
-/**
- * Analyzes medical documents using Gemini 3 Flash.
- */
 export const analyzeMedicalDocument = async (
-  base64Image: string, 
+  base64Data: string, 
   mimeType: string, 
   language: SupportedLanguage = 'English',
   profile?: PatientProfile
 ): Promise<AnalysisResult> => {
-  return withRetry(async () => {
-    // ALWAYS use new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    const prompt = `Act as an expert clinical pharmacist and lab technician.
-    Analyze the provided image for HEALTH AWARENESS and EDUCATION ONLY.
-    
-    CONTEXT: Patient is ${profile?.age || 'unknown age'} ${profile?.gender || ''}. Tone: ${profile?.tone || 'Simple'}.
-    
-    TASKS:
-    1. OCR decipher handwriting.
-    2. Explain medicines & lab parameters in ${language}.
-    3. If dosage is illegible, strictly return "Dosage unclear from image".
-    4. Provide clear warnings about medical context.`;
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const systemInstruction = `You are a world-class Clinical Pharmacist.
+  Decipher messy medical handwriting and complex reports with surgical precision.
+  1. Map instructions (1-0-1, TDS) to the structured schedule.
+  2. Output only valid JSON in ${language}.
+  3. Ensure 50MB capable reasoning logic.`;
 
-    // MUST use ai.models.generateContent to query GenAI with both the model name and prompt.
+  try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-flash-preview', 
       contents: { 
         parts: [
-          { inlineData: { data: base64Image, mimeType } }, 
-          { text: prompt }
+          { inlineData: { data: base64Data, mimeType } }, 
+          { text: "Analyze this medical document and return JSON following the clinical schema." }
         ] 
+      },
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: ANALYSIS_SCHEMA,
+        safetySettings: SAFETY_SETTINGS,
+        thinkingConfig: { thinkingBudget: 1500 }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Analysis failed. Try a clearer scan.");
+    return { ...JSON.parse(text), timestamp: Date.now(), language };
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const translateAnalysisResult = async (
+  currentResult: AnalysisResult,
+  targetLanguage: SupportedLanguage
+): Promise<AnalysisResult> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = `Translate this medical JSON structure accurately into ${targetLanguage}. Keep the logic identical.`;
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: {
+        parts: [
+          { text: JSON.stringify(currentResult) },
+          { text: prompt }
+        ]
       },
       config: {
         responseMimeType: "application/json",
@@ -126,74 +124,41 @@ export const analyzeMedicalDocument = async (
     });
 
     const text = response.text;
-    if (!text) {
-      if (response.candidates?.[0]?.finishReason === 'SAFETY') {
-        throw new Error("This document was flagged by safety filters. Please ensure it is a valid medical document.");
-      }
-      throw new Error("Analysis failed. The image might be too blurry or blocked.");
-    }
-    
-    return { ...JSON.parse(text), timestamp: Date.now(), language };
-  });
+    if (!text) return currentResult;
+    return { ...JSON.parse(text), timestamp: currentResult.timestamp, language: targetLanguage };
+  } catch (e) {
+    return currentResult;
+  }
 };
 
-/**
- * Finds nearby pharmacies using Gemini 2.5 Flash and Maps tool.
- */
 export const findNearbyPharmacies = async (lat: number, lng: number): Promise<any> => {
-  // Initialize with direct process.env.API_KEY reference
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  // Switched to gemini-2.5-flash for more stable Google Maps grounding support
+  
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash", 
-    contents: "Find 3 highly-rated pharmacies near my current location. Return a list of places.",
+    contents: `FIND REAL PHYSICAL PHARMACIES AT THE EXACT COORDINATES: Lat ${lat}, Lng ${lng}.
+    STRICT REQUIREMENT: Use Google Maps Tool to discover ONLY verified medical stores or pharmacies within a 5km radius of these EXACT coordinates. 
+    DO NOT return results from other cities.
+    Return strictly a JSON array: [{name: string, uri: string, address: string}].`,
     config: {
       tools: [{ googleMaps: {} }],
-      toolConfig: {
-        retrievalConfig: {
-          latLng: {
-            latitude: lat,
-            longitude: lng
-          }
-        }
+      toolConfig: { 
+        retrievalConfig: { 
+          latLng: { latitude: lat, longitude: lng } 
+        } 
       }
     },
   });
 
-  // Extract results from grounding chunks
   const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-  if (chunks && Array.isArray(chunks)) {
-    return chunks
-      .filter((chunk: any) => chunk.maps)
-      .map((chunk: any) => ({
-        name: chunk.maps.title || "Nearby Pharmacy",
-        uri: chunk.maps.uri || "#",
-        address: chunk.maps.address || 'Click for location',
-        distance: 'Nearby'
-      }))
-      .slice(0, 3);
-  }
-
-  return [];
-};
-
-export const translateAnalysisResult = async (
-  result: AnalysisResult,
-  targetLanguage: SupportedLanguage
-): Promise<AnalysisResult> => {
-  return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Translate this medical analysis to ${targetLanguage}. Keep clinical terms accurate. Data: ${JSON.stringify(result)}`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: ANALYSIS_SCHEMA,
-        safetySettings: SAFETY_SETTINGS
-      }
-    });
-    return { ...JSON.parse(response.text || '{}'), timestamp: result.timestamp, language: targetLanguage };
-  });
+  if (!chunks || chunks.length === 0) return [];
+  
+  return chunks.filter((c: any) => c.maps).map((c: any) => ({
+    name: c.maps.title,
+    uri: c.maps.uri,
+    address: c.maps.address || 'Verified Medical Store',
+    distance: 'Nearby'
+  })).slice(0, 3);
 };
 
 export const getSpeech = async (text: string) => {
@@ -211,49 +176,41 @@ export const getSpeech = async (text: string) => {
   } catch (e) { return null; }
 };
 
-export const getChatResponse = async (
-  history: ChatMessage[],
-  message: string,
-  context?: AnalysisResult,
-  language: SupportedLanguage = 'English'
-): Promise<string> => {
-  return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    const systemInstruction = `You are "MediDecode Concierge", a clinical education assistant.
-    PURPOSE: Explain the current decoded medical report and answer health awareness questions.
-    STRICT RULE: You are NOT a doctor. Always include a disclaimer.
-    
-    REPORT CONTEXT: ${context ? JSON.stringify(context) : 'None uploaded.'}
-    
-    RESPONSE RULES:
-    1. Language: ${language}.
-    2. Be helpful but cautious.
-    3. Format suggestions as [SUGGESTION] Question? at the end.`;
-
-    const chat: Chat = ai.chats.create({
-      model: 'gemini-3-flash-preview',
-      config: { 
-        systemInstruction,
-        safetySettings: SAFETY_SETTINGS
-      },
-      history: history.map(m => ({
-        role: m.role,
-        parts: [{ text: m.text }]
-      }))
-    });
-
-    const result = await chat.sendMessage({ message });
-    // result.text is a property, not a method
-    const responseText = result.text;
-    
-    if (!responseText) {
-      if (result.candidates?.[0]?.finishReason === 'SAFETY') {
-        return "I'm sorry, but I cannot answer that specific question due to safety restrictions. Please consult your doctor for clinical advice.";
-      }
-      return "I encountered an issue processing your request. Please try rephrasing.";
-    }
-
-    return responseText;
+export const getChatResponse = async (history: ChatMessage[], message: string, context?: AnalysisResult, language: SupportedLanguage = 'English'): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const chat = ai.chats.create({
+    model: 'gemini-3-flash-preview',
+    config: { 
+      systemInstruction: `You are the MediDecode AI Assistant. 
+      CURRENT SCAN CONTEXT: ${JSON.stringify(context || 'No document available')}. 
+      LANGUAGE: ${language}.
+      INSTRUCTIONS:
+      1. Provide accurate, evidence-based, and CONCISE answers based strictly on the scanned medical data.
+      2. For follow-up questions, refer to detected medicines, dosages, and lab values in the context.
+      3. If asked general health questions, answer briefly and always include a clinical disclaimer.
+      4. Avoid jargon. Use plain language.`,
+      safetySettings: SAFETY_SETTINGS 
+    },
+    history: history.map(m => ({ role: m.role, parts: [{ text: m.text }] }))
   });
+  const result = await chat.sendMessage({ message });
+  return result.text || "...";
+};
+
+export const generateMockupImage = async (type: 'wireframe' | 'mockup' | 'diagram'): Promise<string | null> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  let prompt = '';
+  if (type === 'wireframe') prompt = 'A professional UI wireframe for a medical app dashboard.';
+  else if (type === 'mockup') prompt = 'High-fidelity 3D mockup of a medical smartphone app.';
+  else prompt = 'Clinical journey flowchart diagram.';
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: { parts: [{ text: prompt }] },
+      config: { imageConfig: { aspectRatio: "16:9" } }
+    });
+    const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+    return part ? `data:${part.inlineData.mimeType};base64,${part.inlineData.data}` : null;
+  } catch (e) { return null; }
 };

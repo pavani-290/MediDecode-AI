@@ -8,45 +8,76 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0f172a">
     <link rel="manifest" href="manifest.json">
-    <title>MediDecode - Decipher Medical Handwriting</title>
+    <title>MediDecode AI - Pro Medical Analysis</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary: #4f46e5;
+            --secondary: #10b981;
+            --accent: #f43f5e;
+            --bg-aura: #f8fafc;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-aura);
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            color: #1e293b;
+        }
+
+        /* Mesh Gradient Background */
+        .mesh-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
             background-color: #f8fafc;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.05) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(139, 92, 246, 0.08) 0px, transparent 50%);
         }
-        .no-print { display: block; }
-        @media print {
-            .no-print { display: none !important; }
-            .report-container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
-            body { background: white; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
         }
-        /* Custom Scrollbar */
+
+        .pdf-template-container {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            width: 210mm;
+            z-index: -1000;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+
+        @keyframes scan {0% {top: 0%;} 100% {top: 100%;}}
+        .animate-scan {animation: scan 2s linear infinite;}
+        
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body>
+    <div class="mesh-bg"></div>
     <div id="root"></div>
-    <script>
-      // Service Worker Registration for PWA Installation
-      // Using relative path 'sw.js' instead of '/sw.js' to avoid origin mismatch in preview environments
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js', { scope: './' })
-            .then(registration => {
-              console.log('MediDecode SW registered:', registration.scope);
-            })
-            .catch(error => {
-              console.warn('MediDecode SW registration failed:', error);
-            });
-        });
-      }
-    </script>
     <script type="importmap">
     {
       "imports": {

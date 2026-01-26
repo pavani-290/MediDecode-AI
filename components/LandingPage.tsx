@@ -4,284 +4,169 @@ import React, { useState, useEffect } from 'react';
 interface LandingPageProps {
   onStart: () => void;
   onLoginClick: () => void;
+  onNavigateInfo?: (type: 'services' | 'contact' | 'privacy' | 'terms' | 'standards') => void;
+  user?: { name: string } | null;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick }) => {
-  const [installing, setInstalling] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallGuide, setShowInstallGuide] = useState(false);
-  const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
+const LogoMark = ({ className = "w-10 h-10" }: { className?: string }) => (
+  <div className={`${className} bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-2xl transition-all group-hover:bg-rose-500 group-hover:rotate-6 relative overflow-hidden`}>
+    <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent opacity-50"></div>
+    <i className="fas fa-heartbeat text-xl relative z-10"></i>
+  </div>
+);
+
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavigateInfo, user }) => {
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    // Detect Platform
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    if (/iphone|ipad|ipod/.test(userAgent)) {
-      setPlatform('ios');
-    } else if (/android/.test(userAgent)) {
-      setPlatform('android');
-    }
-
-    // Capture the install prompt for supported browsers
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      console.log('App is ready to be installed');
-    });
-
-    window.addEventListener('appinstalled', () => {
-      setDeferredPrompt(null);
-      setInstalling(false);
-      setShowInstallGuide(false);
-    });
+    const handleScroll = () => setScrolled(window.scrollY > 30);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleInstallApp = async () => {
-    setInstalling(true);
-    await new Promise(r => setTimeout(r, 1200));
+  const workflowSteps = [
+    { num: '01', title: 'Clinical Capture', desc: 'High-res vision input for documents up to 50MB.', icon: 'fa-camera-retro', color: 'bg-indigo-500' },
+    { num: '02', title: 'AI Deciphering', desc: 'Gemini 3 Flash handles shorthand and script.', icon: 'fa-brain', color: 'bg-rose-500' },
+    { num: '03', title: 'Strict Grounding', desc: 'Verified data mapped to real coordinates.', icon: 'fa-map-pin', color: 'bg-emerald-500' },
+    { num: '04', title: 'Insight Delivery', desc: 'Professional reports in 12+ native languages.', icon: 'fa-file-medical-alt', color: 'bg-amber-500' }
+  ];
 
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      setDeferredPrompt(null);
-      setInstalling(false);
-    } else {
-      setShowInstallGuide(true);
-      setInstalling(false);
-    }
-  };
+  const features = [
+    { icon: 'fa-signature', title: 'Handwriting OCR', desc: 'Vertex-grade deciphering for prescriptions.', theme: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+    { icon: 'fa-comment-medical', title: 'Plain Language', desc: 'No more medical jargon or confusion.', theme: 'bg-rose-50 text-rose-600 border-rose-100' },
+    { icon: 'fa-calendar-check', title: 'Visual Schedules', desc: 'Daily dose mapping made intuitive.', theme: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+    { icon: 'fa-chart-line', title: 'Lab Status', desc: 'Visual markers for blood test results.', theme: 'bg-amber-50 text-amber-600 border-amber-100' },
+    { icon: 'fa-location-dot', theme: 'bg-sky-50 text-sky-600 border-sky-100', title: 'Grounded GPS', desc: 'Real stores, no hallucinations.' },
+    { icon: 'fa-volume-high', theme: 'bg-violet-50 text-violet-600 border-violet-100', title: 'Audio Summaries', desc: 'Listen to your report summary.' }
+  ];
 
   return (
-    <div className="bg-[#0f172a] min-h-screen text-white font-sans overflow-x-hidden selection:bg-blue-500 selection:text-white">
-      {/* Dynamic Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-600/10 rounded-full blur-[160px] animate-pulse"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-600/10 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '3s' }}></div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="relative z-50 flex items-center justify-between px-6 md:px-12 py-6 border-b border-white/5 backdrop-blur-xl bg-slate-900/40 sticky top-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 rotate-3 hover:rotate-0 transition-transform cursor-pointer">
-            <i className="fas fa-heartbeat text-white text-lg"></i>
+    <div className="min-h-screen">
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 px-6 md:px-10 py-4 ${scrolled ? 'bg-white/80 backdrop-blur-3xl border-b border-slate-100 py-3 shadow-lg shadow-indigo-500/5' : 'bg-transparent'}`}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+            <LogoMark />
+            <span className="font-black text-2xl tracking-tighter text-slate-900">MediDecode <span className="text-indigo-600">AI</span></span>
           </div>
-          <span className="font-black text-xl tracking-tighter">MediDecode <span className="text-blue-500">AI</span></span>
-        </div>
-        
-        <div className="hidden lg:flex items-center space-x-10 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-          <a href="#features" className="hover:text-blue-400 transition-colors">Features</a>
-          <a href="#different" className="hover:text-blue-400 transition-colors">Why Us?</a>
-          <button onClick={handleInstallApp} className="hover:text-blue-400 transition-colors">Install App</button>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <button onClick={onLoginClick} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors px-4">Login</button>
-          <button onClick={onStart} className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-xl shadow-blue-500/20 active:scale-95">Get Started</button>
+          <div className="flex items-center space-x-6">
+            <button onClick={onLoginClick} className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors">Portal Access</button>
+            <button onClick={onStart} className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-8 py-4 rounded-2xl transition-all shadow-2xl hover:bg-indigo-600 hover:shadow-indigo-500/40 hover:-translate-y-1">
+              Start Scan <i className="fas fa-bolt ml-2 text-rose-400"></i>
+            </button>
+          </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 pt-20 pb-32 flex flex-col lg:flex-row items-center gap-16">
-        <div className="lg:w-3/5 space-y-10 text-center lg:text-left">
-          <div className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[10px] font-black uppercase tracking-widest">
-            <span>Turning Medical Handwriting into Clear Understanding</span>
-          </div>
-          <h1 className="text-6xl md:text-8xl font-black leading-[0.9] tracking-tighter">
-            Understand Your <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-500">Prescriptions.</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-slate-400 max-w-2xl leading-relaxed font-medium mx-auto lg:mx-0">
-            Can't read your doctor's handwriting? We turn complex medical reports into simple words you can understand. No more confusion, just clear health guidance.
-          </p>
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6">
-            <button onClick={onStart} className="bg-white text-slate-900 px-12 py-7 rounded-[2.5rem] font-black text-sm uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-2xl shadow-blue-500/10 group flex items-center">
-              Start Decoding Now
-              <i className="fas fa-arrow-right ml-3 group-hover:translate-x-1 transition-transform"></i>
-            </button>
-            <button onClick={handleInstallApp} disabled={installing} className="border-2 border-slate-700/50 backdrop-blur-md px-10 py-7 rounded-[2.5rem] font-black text-sm uppercase tracking-widest hover:border-blue-400 transition-all flex items-center space-x-3">
-              <i className={`fas ${installing ? 'fa-spinner fa-spin' : 'fa-download'} text-lg`}></i>
-              <span>{installing ? 'Preparing App...' : 'Download Full App'}</span>
-            </button>
-          </div>
-        </div>
-        <div className="lg:w-2/5 relative hidden lg:block">
-           <div className="relative aspect-[3/4] w-full max-w-md mx-auto">
-              <div className="absolute inset-0 bg-blue-600/20 blur-[100px] rounded-full"></div>
-              <div className="relative bg-slate-900 border border-white/10 rounded-[4rem] p-10 h-full flex flex-col items-center justify-center shadow-3xl text-center space-y-8 overflow-hidden group">
-                <div className="w-24 h-24 bg-blue-600 rounded-[2rem] flex items-center justify-center text-4xl shadow-2xl shadow-blue-500/40 group-hover:scale-110 transition-transform">
-                  <i className="fas fa-magic text-white"></i>
-                </div>
-                <h3 className="text-3xl font-black">Contextual AI</h3>
-                <p className="text-slate-400 font-medium">It doesn't just scan; it understands medical context to decipher handwriting accurately.</p>
-                <div className="w-full bg-slate-800 rounded-3xl p-6 border border-white/5">
-                   <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500">
-                        <i className="fas fa-check"></i>
-                      </div>
-                      <div className="text-left">
-                        <p className="text-[10px] font-black text-slate-500 uppercase">Grounding</p>
-                        <p className="text-sm font-black">Google Maps Integrated</p>
-                      </div>
-                   </div>
-                </div>
-              </div>
-           </div>
-        </div>
-      </section>
-
-      {/* Differentiation Section */}
-      <section id="different" className="max-w-7xl mx-auto px-6 md:px-12 py-32 border-t border-white/5 bg-slate-900/20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          <div className="space-y-8">
-            <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.4em]">The Competitive Edge</p>
-            <h2 className="text-5xl md:text-6xl font-black tracking-tighter">Why we are different.</h2>
-            <p className="text-slate-400 text-lg font-medium leading-relaxed">
-              Standard OCR apps "see" text. We "understand" healthcare. MediDecode is built specifically to bridge the clinical gap between doctors and patients.
+      <section className="pt-48 pb-24 px-6 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+          <div className="lg:col-span-7 space-y-10 text-center lg:text-left">
+            <div className="inline-flex items-center space-x-3 px-5 py-2.5 bg-white/80 glass-card rounded-full shadow-xl">
+               <span className="flex h-3 w-3 rounded-full bg-rose-500 animate-ping"></span>
+               <span className="text-slate-600 text-[10px] font-extrabold uppercase tracking-[0.3em]">Vertex AI Clinical Node</span>
+            </div>
+            <h1 className="text-6xl md:text-8xl font-black text-slate-900 leading-[0.9] tracking-tighter">
+              Health, <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-rose-500 to-amber-500">Decoded.</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-slate-500 max-w-xl leading-relaxed font-medium mx-auto lg:mx-0">
+              The professional visual portal for deciphering prescriptions and complex lab reports with extreme precision.
             </p>
-            
-            <div className="space-y-6">
-              <div className="flex items-start space-x-6 p-6 bg-white/5 rounded-3xl border border-white/5">
-                <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 shrink-0"><i className="fas fa-stethoscope"></i></div>
-                <div>
-                  <h4 className="text-lg font-black text-white">Medical Reasoning OCR</h4>
-                  <p className="text-slate-500 text-sm mt-1">Unlike generic scanners, our AI knows clinical patterns. It won't mistake "q.i.d" for random numbers.</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-6 p-6 bg-white/5 rounded-3xl border border-white/5">
-                <div className="w-12 h-12 bg-emerald-600/20 rounded-xl flex items-center justify-center text-emerald-400 shrink-0"><i className="fas fa-map-pin"></i></div>
-                <div>
-                  <h4 className="text-lg font-black text-white">Location Grounding</h4>
-                  <p className="text-slate-500 text-sm mt-1">We don't just explain the medicine; we find the nearest verified pharmacy using Google Maps Tool.</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-6 p-6 bg-white/5 rounded-3xl border border-white/5">
-                <div className="w-12 h-12 bg-amber-600/20 rounded-xl flex items-center justify-center text-amber-400 shrink-0"><i className="fas fa-language"></i></div>
-                <div>
-                  <h4 className="text-lg font-black text-white">Audible Multilingual Support</h4>
-                  <p className="text-slate-500 text-sm mt-1">Elderly patients can listen to their reports in 12+ native languages with natural human-like voice synthesis.</p>
-                </div>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
+              <button onClick={onStart} className="bg-slate-900 text-white px-12 py-7 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-4xl hover:bg-indigo-600 transition-all hover:scale-105 active:scale-95 group">
+                Begin Analysis <i className="fas fa-long-arrow-right ml-4 group-hover:translate-x-3 transition-transform"></i>
+              </button>
+              <button onClick={() => onNavigateInfo?.('services')} className="bg-white/50 backdrop-blur-lg border-2 border-slate-100 text-slate-900 px-12 py-7 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] hover:bg-slate-100 transition-all">
+                The Tech Stack
+              </button>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="p-8 bg-blue-600 rounded-[3rem] shadow-2xl shadow-blue-500/20 space-y-4">
-              <h4 className="text-xl font-black text-white">Vs. Generic OCR</h4>
-              <p className="text-blue-100 text-xs font-medium leading-relaxed">Generic scanners hallucinate when handwriting is messy. We use medical context to verify every word against clinical drug databases.</p>
-            </div>
-            <div className="p-8 bg-slate-800 rounded-[3rem] border border-white/5 space-y-4">
-              <h4 className="text-xl font-black text-white">Vs. Telemedicine</h4>
-              <p className="text-slate-400 text-xs font-medium leading-relaxed">Booking a doctor is easy; understanding what they gave you isn't. We focus on the "after-visit" anxiety and clarity.</p>
-            </div>
-            <div className="p-8 bg-slate-800 rounded-[3rem] border border-white/5 space-y-4 sm:col-span-2">
-              <h4 className="text-xl font-black text-white">Vs. Health Portals (WebMD)</h4>
-              <p className="text-slate-400 text-xs font-medium leading-relaxed">Standard portals are static and impersonal. MediDecode is personalized to YOUR specific lab result or prescription, providing localized guidance and instant follow-up chat.</p>
-            </div>
+          <div className="lg:col-span-5 hidden lg:block animate-float">
+             <div className="bg-white/90 glass-card rounded-[4rem] shadow-4xl p-12 space-y-10 border border-white/60">
+                 <div className="flex items-center justify-between">
+                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl flex items-center justify-center text-white text-3xl shadow-xl shadow-indigo-500/20"><i className="fas fa-signature"></i></div>
+                    <div className="text-right">
+                       <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Vision Logic</p>
+                       <p className="text-3xl font-black text-slate-900 tracking-tighter">Verified</p>
+                    </div>
+                 </div>
+                 <div className="relative h-32 bg-slate-50 rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-inner">
+                    <div className="absolute top-0 left-0 w-2 bg-gradient-to-b from-rose-500 to-indigo-600 h-full shadow-[0_0_20px_#f43f5e] animate-scan"></div>
+                    <div className="p-8 space-y-3">
+                       <div className="h-3 w-48 bg-slate-200 rounded-full opacity-60"></div>
+                       <div className="h-3 w-32 bg-slate-200 rounded-full opacity-60"></div>
+                       <div className="h-3 w-40 bg-slate-200 rounded-full opacity-60"></div>
+                    </div>
+                 </div>
+                 <div className="p-8 bg-slate-900 rounded-[3rem] text-white shadow-3xl transform hover:scale-105 transition-transform">
+                    <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-2">Decoded Shorthand</p>
+                    <p className="text-sm font-bold italic opacity-90">"TDS - Take 1 tablet three times daily, strictly p.c. (after meals)."</p>
+                 </div>
+             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="max-w-7xl mx-auto px-6 md:px-12 py-32">
-        <div className="text-center mb-24 space-y-6">
-          <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.4em]">The Core Experience</p>
-          <h2 className="text-5xl md:text-7xl font-black tracking-tight">Intelligence at your fingertips.</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[
-            { icon: 'fa-pen-nib', title: 'Reads Messy Writing', desc: 'Can\'t read your prescription? We decode even the hardest doctor handwriting.', color: 'text-blue-500' },
-            { icon: 'fa-book-open', title: 'Everyday Words', desc: 'We explain complex medical terms in simple, clear language that anyone can understand.', color: 'text-emerald-500' },
-            { icon: 'fa-shield-virus', title: 'Side-Effect Alerts', desc: 'Learn about common side effects and what to watch out for with your medicines.', color: 'text-indigo-500' },
-            { icon: 'fa-globe-americas', title: 'Your Own Language', desc: 'Get results in Hindi, Bengali, Tamil, Spanish, and many more native languages.', color: 'text-amber-500' },
-            { icon: 'fa-file-pdf', title: 'PDF Downloads', desc: 'Save your explained report as a clean PDF to show your family or keep for yourself.', color: 'text-purple-500' },
-            { icon: 'fa-robot', title: 'Ask Questions', desc: 'Have a doubt? Chat with our AI assistant anytime to learn more about your health.', color: 'text-rose-500' }
-          ].map((feature, i) => (
-            <div key={i} className="group p-10 bg-slate-900/40 backdrop-blur-md rounded-[3rem] border border-white/5 hover:border-blue-500/50 transition-all duration-500">
-              <div className={`w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center ${feature.color} mb-8 group-hover:scale-110 transition-transform`}>
-                <i className={`fas ${feature.icon} text-2xl`}></i>
+      <section className="max-w-7xl mx-auto px-6 py-32">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {workflowSteps.map((step, i) => (
+            <div key={i} className="relative p-12 bg-white/70 glass-card rounded-[3.5rem] border border-slate-100 group hover:-translate-y-3 transition-all">
+              <span className={`absolute top-10 right-10 text-5xl font-black opacity-5 group-hover:opacity-20 transition-opacity ${step.color.replace('bg-', 'text-')}`}>{step.num}</span>
+              <div className={`w-16 h-16 ${step.color} text-white rounded-2xl flex items-center justify-center text-2xl mb-8 shadow-2xl`}>
+                <i className={`fas ${step.icon}`}></i>
               </div>
-              <h3 className="text-2xl font-black mb-4">{feature.title}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed font-medium">{feature.desc}</p>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-4">{step.title}</h3>
+              <p className="text-slate-500 text-sm font-medium leading-relaxed">{step.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 py-16 px-6 md:px-12 text-center bg-slate-900/50">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-12 max-w-7xl mx-auto">
-          <div className="flex flex-col items-center md:items-start space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20">
-                <i className="fas fa-heartbeat"></i>
-              </div>
-              <span className="font-black text-xl tracking-tighter">MediDecode <span className="text-blue-500">AI</span></span>
-            </div>
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">&copy; 2026 MediDecode AI. All Rights Reserved.</p>
+      <section className="bg-slate-900 py-32 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-500 blur-[150px] -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-rose-500 blur-[150px] translate-x-1/2 translate-y-1/2"></div>
+        </div>
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="text-center space-y-6 mb-24">
+            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter">Clinical Excellence Features</h2>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.4em]">Integrated Health Matrix</p>
           </div>
-          <div className="flex items-center space-x-4">
-            <a href="#" className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-all"><i className="fab fa-twitter"></i></a>
-            <a href="#" className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-all"><i className="fab fa-linkedin"></i></a>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((f, i) => (
+              <div key={i} className={`p-10 rounded-[3rem] border transition-all hover:scale-105 ${f.theme}`}>
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-8 bg-white shadow-lg">
+                  <i className={`fas ${f.icon}`}></i>
+                </div>
+                <h3 className="text-xl font-black mb-4">{f.title}</h3>
+                <p className="opacity-80 text-sm font-bold leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <footer className="py-24 px-6 md:px-12 border-t border-slate-100 bg-white">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
+          <div className="space-y-6">
+            <div className="flex items-center justify-center md:justify-start space-x-3">
+               <LogoMark />
+               <span className="font-black text-2xl tracking-tighter">MediDecode <span className="text-indigo-600">AI</span></span>
+            </div>
+            <p className="text-slate-400 text-sm font-medium max-w-sm leading-relaxed">
+               Global pioneer in transparent clinical interpretation through Vertex AI logic.
+            </p>
+          </div>
+          <div className="flex gap-8">
+             {['Privacy', 'Standards', 'Support'].map(item => (
+               <button key={item} className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">{item}</button>
+             ))}
+          </div>
+          <div className="bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100 flex items-center space-x-3">
+            <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></span>
+            <span className="text-[10px] font-black uppercase text-emerald-700 tracking-[0.2em]">Node Online</span>
           </div>
         </div>
       </footer>
-
-      {/* Custom Native-Style Install Overlay */}
-      {showInstallGuide && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-2xl animate-in fade-in duration-300">
-          <div className="bg-slate-900 border border-white/10 w-full max-w-md rounded-[3rem] p-8 shadow-3xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-blue-600"></div>
-            <button onClick={() => setShowInstallGuide(false)} className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors">
-              <i className="fas fa-times text-xl"></i>
-            </button>
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2rem] flex items-center justify-center text-white mx-auto mb-6 shadow-2xl shadow-blue-500/20">
-                <i className="fas fa-heartbeat text-3xl"></i>
-              </div>
-              <h3 className="text-2xl font-black mb-1 tracking-tight">MediDecode AI</h3>
-              <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.2em]">Application Bundle Ready</p>
-            </div>
-            <div className="space-y-4">
-              <div className="bg-white/5 p-5 rounded-3xl border border-white/5 flex items-center space-x-4">
-                <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 shrink-0"><i className="fas fa-microchip"></i></div>
-                <div>
-                   <p className="text-[10px] font-black text-slate-500 uppercase">Compatibility</p>
-                   <p className="text-sm font-bold text-slate-200">Optimized for your device</p>
-                </div>
-              </div>
-              <div className="bg-white/5 p-5 rounded-3xl border border-white/5 space-y-4">
-                <p className="text-xs font-bold text-slate-300 text-center">To complete the installation:</p>
-                {platform === 'ios' ? (
-                  <div className="flex flex-col space-y-3">
-                    <div className="flex items-center space-x-4">
-                       <span className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-black">1</span>
-                       <p className="text-xs text-slate-300">Tap the <i className="fas fa-share-square mx-1 text-blue-400"></i> share icon</p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                       <span className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-black">2</span>
-                       <p className="text-xs text-slate-300">Select <span className="text-white font-black">"Add to Home Screen"</span></p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col space-y-3">
-                    <div className="flex items-center space-x-4">
-                       <span className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-black">1</span>
-                       <p className="text-xs text-slate-300">Tap the <i className="fas fa-ellipsis-v mx-1 text-blue-400"></i> menu button</p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                       <span className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-black">2</span>
-                       <p className="text-xs text-slate-300">Tap <span className="text-white font-black">"Install App"</span></p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <button onClick={() => setShowInstallGuide(false)} className="w-full mt-8 bg-blue-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 active:scale-95">
-              Download Started
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
