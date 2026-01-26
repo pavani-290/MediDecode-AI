@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type, Chat, Modality } from "@google/genai";
+import { GoogleGenAI, Type, Chat, Modality, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { AnalysisResult, SupportedLanguage, PatientProfile, ChatMessage } from "../types";
 
 const ANALYSIS_SCHEMA = {
@@ -53,11 +53,12 @@ const ANALYSIS_SCHEMA = {
   required: ["summary", "medicines", "keyRecommendations", "confidenceScore"]
 };
 
+// Fixed SafetySetting type errors by using HarmCategory and HarmBlockThreshold enums from @google/genai
 const SAFETY_SETTINGS = [
-  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
 
 export const analyzeMedicalDocument = async (
@@ -136,10 +137,12 @@ export const findNearbyPharmacies = async (lat: number, lng: number): Promise<an
   
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash", 
-    contents: `FIND REAL PHYSICAL PHARMACIES AT THE EXACT COORDINATES: Lat ${lat}, Lng ${lng}.
-    STRICT REQUIREMENT: Use Google Maps Tool to discover ONLY verified medical stores or pharmacies within a 5km radius of these EXACT coordinates. 
-    DO NOT return results from other cities.
-    Return strictly a JSON array: [{name: string, uri: string, address: string}].`,
+    contents: `USER CURRENT LOCATION COORDINATES: Lat ${lat}, Lng ${lng}.
+    STRICT COMMAND: Find REAL, ACTIVE pharmacies within 5km of these EXACT coordinates.
+    CRITICAL: DO NOT return results from the USA or Dallas unless the coordinates are actually in the USA.
+    If coordinates point to India (e.g., Tirupati), only return stores in that specific city or neighborhood.
+    ONLY USE RESULTS FROM THE GOOGLE MAPS TOOL.
+    Return strictly a JSON array of objects: [{name: string, uri: string, address: string}].`,
     config: {
       tools: [{ googleMaps: {} }],
       toolConfig: { 
@@ -153,10 +156,11 @@ export const findNearbyPharmacies = async (lat: number, lng: number): Promise<an
   const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
   if (!chunks || chunks.length === 0) return [];
   
+  // Filter only maps results and map to our structure
   return chunks.filter((c: any) => c.maps).map((c: any) => ({
-    name: c.maps.title,
+    name: c.maps.title || 'Local Pharmacy',
     uri: c.maps.uri,
-    address: c.maps.address || 'Verified Medical Store',
+    address: c.maps.address || 'Verified Nearby Location',
     distance: 'Nearby'
   })).slice(0, 3);
 };
@@ -185,10 +189,10 @@ export const getChatResponse = async (history: ChatMessage[], message: string, c
       CURRENT SCAN CONTEXT: ${JSON.stringify(context || 'No document available')}. 
       LANGUAGE: ${language}.
       INSTRUCTIONS:
-      1. Provide accurate, evidence-based, and CONCISE answers based strictly on the scanned medical data.
-      2. For follow-up questions, refer to detected medicines, dosages, and lab values in the context.
-      3. If asked general health questions, answer briefly and always include a clinical disclaimer.
-      4. Avoid jargon. Use plain language.`,
+      1. Provide extremely accurate and CONCISE answers based strictly on the scanned medical document provided.
+      2. If asked about medicines in the document, refer strictly to the detected names and dosages.
+      3. For lab results, explain the status (High/Low/Normal) clearly and what it generally means clinically.
+      4. Always include a clinical disclaimer that this is AI interpretation.`,
       safetySettings: SAFETY_SETTINGS 
     },
     history: history.map(m => ({ role: m.role, parts: [{ text: m.text }] }))
@@ -197,20 +201,40 @@ export const getChatResponse = async (history: ChatMessage[], message: string, c
   return result.text || "...";
 };
 
+// Added generateMockupImage to support presentation asset generation in MockupLab
 export const generateMockupImage = async (type: 'wireframe' | 'mockup' | 'diagram'): Promise<string | null> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  let prompt = '';
-  if (type === 'wireframe') prompt = 'A professional UI wireframe for a medical app dashboard.';
-  else if (type === 'mockup') prompt = 'High-fidelity 3D mockup of a medical smartphone app.';
-  else prompt = 'Clinical journey flowchart diagram.';
+  
+  const prompts = {
+    wireframe: "A high-fidelity mobile app UI wireframe for a medical interpretation dashboard, clean white background, professional blueprint style with clinical elements.",
+    mockup: "A professional 3D product mockup of a smartphone or tablet displaying the MediDecode AI medical interface, clean studio lighting, high resolution.",
+    diagram: "A professional clinical data journey process flow diagram, showing document scanning to AI interpretation, clean modern medical design."
+  };
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: prompt }] },
-      config: { imageConfig: { aspectRatio: "16:9" } }
+      contents: {
+        parts: [{ text: prompts[type] }]
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: "16:9"
+        }
+      }
     });
-    const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
-    return part ? `data:${part.inlineData.mimeType};base64,${part.inlineData.data}` : null;
-  } catch (e) { return null; }
+
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
+        // Iterate through parts to find the inlineData containing the generated image bytes
+        if (part.inlineData) {
+          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Mockup generation error:", error);
+    return null;
+  }
 };

@@ -51,24 +51,57 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isAnalyzing, onPrevie
         return;
       }
       setError(null);
-      try {
-        const previewUrl = file.type.includes('pdf') ? 'https://cdn-icons-png.flaticon.com/512/337/337946.png' : URL.createObjectURL(file);
-        setPreview(previewUrl);
-        let base64 = "";
-        if (!file.type.includes('pdf')) {
-          base64 = await compressImage(file);
-        } else {
-          base64 = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-            reader.readAsDataURL(file);
-          });
-        }
-        if (onPreviewChange) onPreviewChange(previewUrl, file.type);
-        onUpload(base64, file.type);
-      } catch (err) {
-        setError("Processing Error. Try high-res scan.");
+      processFile(file);
+    }
+  };
+
+  const processFile = async (file: File | Blob, type?: string) => {
+    try {
+      const mimeType = type || (file as File).type;
+      const previewUrl = mimeType.includes('pdf') ? 'https://cdn-icons-png.flaticon.com/512/337/337946.png' : URL.createObjectURL(file);
+      setPreview(previewUrl);
+      
+      let base64 = "";
+      if (!mimeType.includes('pdf')) {
+        base64 = await compressImage(file as File);
+      } else {
+        base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.readAsDataURL(file);
+        });
       }
+      if (onPreviewChange) onPreviewChange(previewUrl, mimeType);
+      onUpload(base64, mimeType);
+    } catch (err) {
+      setError("Processing Error. Try high-res scan.");
+    }
+  };
+
+  const handleQRScan = async (result: string) => {
+    setShowQRScanner(false);
+    setError(null);
+    
+    // Check if result is a Data URI (Base64 image or PDF)
+    if (result.startsWith('data:')) {
+      try {
+        const fetchResponse = await fetch(result);
+        const blob = await fetchResponse.blob();
+        processFile(blob, blob.type);
+      } catch (e) {
+        setError("Unable to process QR encoded data.");
+      }
+    } 
+    // Check if result is a URL (Mocking a secure report link fetch)
+    else if (result.startsWith('http')) {
+      setError("Linking to medical portal: " + new URL(result).hostname);
+      // In a real scenario, we'd fetch the document from the portal.
+      // For the demo, we alert the user that it's a valid link.
+      setTimeout(() => {
+        setError("Cloud portal linked. Please upload the file directly if cross-origin access is restricted.");
+      }, 2000);
+    } else {
+      setError("Scanned QR is not a valid medical portal link.");
     }
   };
 
@@ -93,6 +126,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isAnalyzing, onPrevie
           </div>
         )}
 
+        {error && (
+          <div className="absolute top-10 left-1/2 -translate-x-1/2 z-30 bg-rose-500 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest animate-bounce">
+            {error}
+          </div>
+        )}
+
         {preview ? (
           <div className="text-center w-full animate-in zoom-in-95 duration-500 relative z-10">
             <div className="relative inline-block">
@@ -100,7 +139,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isAnalyzing, onPrevie
                <div className="absolute top-0 left-0 w-full h-full rounded-[3rem] border-2 border-indigo-500/20 pointer-events-none"></div>
             </div>
             <div className="flex justify-center space-x-4">
-              <button onClick={() => fileInputRef.current?.click()} className="bg-slate-900 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 transition-all shadow-xl">Replace Document</button>
+              <button onClick={() => { setPreview(null); fileInputRef.current?.click(); }} className="bg-slate-900 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 transition-all shadow-xl">Replace Document</button>
             </div>
           </div>
         ) : (
@@ -155,7 +194,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isAnalyzing, onPrevie
         ))}
       </div>
 
-      {showQRScanner && <QRScanner onScan={() => setShowQRScanner(false)} onClose={() => setShowQRScanner(false)} />}
+      {showQRScanner && <QRScanner onScan={handleQRScan} onClose={() => setShowQRScanner(false)} />}
     </div>
   );
 };

@@ -148,7 +148,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
       <footer className="py-24 px-6 md:px-12 border-t border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
           <div className="space-y-6">
-            <div className="flex items-center justify-center md:justify-start space-x-3">
+            <div className="flex items-center justify-center md:justify-start space-x-3 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
                <LogoMark />
                <span className="font-black text-2xl tracking-tighter">MediDecode <span className="text-indigo-600">AI</span></span>
             </div>
@@ -157,14 +157,32 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
             </p>
           </div>
           <div className="flex gap-8">
-             {['Privacy', 'Standards', 'Support'].map(item => (
-               <button key={item} className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">{item}</button>
+             {[
+               { name: 'Privacy', type: 'privacy' },
+               { name: 'Standards', type: 'standards' },
+               { name: 'Support', type: 'contact' }
+             ].map(item => (
+               <button 
+                key={item.name} 
+                onClick={() => onNavigateInfo?.(item.type as any)}
+                className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors"
+               >
+                {item.name}
+               </button>
              ))}
           </div>
           <div className="bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100 flex items-center space-x-3">
             <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></span>
             <span className="text-[10px] font-black uppercase text-emerald-700 tracking-[0.2em]">Node Online</span>
           </div>
+        </div>
+        <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
+           <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">© 2026 MediDecode AI Clinical Portal • All Data Protected</p>
+           <div className="flex space-x-6">
+              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-colors"><i className="fab fa-twitter"></i></a>
+              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-colors"><i className="fab fa-linkedin"></i></a>
+              <a href="#" className="text-slate-300 hover:text-indigo-600 transition-colors"><i className="fab fa-github"></i></a>
+           </div>
         </div>
       </footer>
     </div>

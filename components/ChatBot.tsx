@@ -29,13 +29,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
 
   useEffect(() => {
     const baseSuggestions: Record<string, string[]> = {
-      'English': ["What medicines were found?", "Explain dosage for drug X", "Check interactions"],
+      'English': ["What medicines were found?", "Explain dosage instructions", "Any warnings found?"],
       'Hindi': ["कौन सी दवाएं मिलीं?", "खुराक समझाएं", "खतरे की चेतावनी?"]
     };
 
     if (context && context.medicines && context.medicines.length > 0) {
       const medName = context.medicines[0].name;
-      setSuggestions([`What is ${medName}?`, `Is ${medName} safe for me?`, "Health advice"]);
+      setSuggestions([`What is ${medName}?`, `Side effects for ${medName}?`, "Health tips"]);
     } else {
       setSuggestions(baseSuggestions[language] || baseSuggestions['English']);
     }
@@ -52,6 +52,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
         setIsListening(false);
+        // Automatic processing after voice end
         handleSend(transcript);
       };
 
@@ -88,7 +89,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
       const response = await getChatResponse(messages, cleanText, context, language as SupportedLanguage);
       setMessages(prev => [...prev, { role: 'model', text: response }]);
     } catch (error: any) {
-      setMessages(prev => [...prev, { role: 'model', text: "Medical reasoning node unreachable. Please retry shortly." }]);
+      setMessages(prev => [...prev, { role: 'model', text: "Medical reasoning service is temporarily busy. Please try again." }]);
     } finally {
       setIsTyping(false);
     }
@@ -104,7 +105,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-32 right-8 w-[480px] max-w-[calc(100vw-4rem)] h-[780px] max-h-[85vh] bg-white/95 backdrop-blur-3xl rounded-[4rem] shadow-4xl flex flex-col z-50 overflow-hidden border border-white/60 animate-in fade-in slide-in-from-bottom-12 duration-500 chatbot-window">
+        <div className="fixed bottom-32 right-8 w-[480px] max-w-[calc(100vw-4rem)] h-[750px] max-h-[85vh] bg-white/95 backdrop-blur-3xl rounded-[3.5rem] shadow-4xl flex flex-col z-50 overflow-hidden border border-white/60 animate-in fade-in slide-in-from-bottom-12 duration-500 chatbot-window">
           <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-950 p-10 text-white relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
             <div className="flex items-center relative z-10">
@@ -115,7 +116,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
                 <h3 className="font-black text-sm uppercase tracking-widest text-rose-400">Clinical Concierge</h3>
                 <div className="flex items-center mt-2">
                   <div className={`w-2.5 h-2.5 rounded-full mr-2.5 ${isListening ? 'bg-rose-500 animate-ping' : 'bg-emerald-500 shadow-[0_0_12px_#10b981]'}`}></div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{isListening ? 'Listening to voice...' : 'Grounded Logic Active'}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{isListening ? 'Voice Portal Open' : 'Clinical Node Active'}</p>
                 </div>
               </div>
             </div>
@@ -123,10 +124,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-12 space-y-10 bg-slate-50/20">
             {messages.length === 0 && (
-              <div className="text-center py-20 px-8 space-y-8">
-                <div className="w-24 h-24 bg-white rounded-[2.5rem] shadow-xl border border-slate-100 flex items-center justify-center mx-auto text-indigo-600 text-4xl"><i className="fas fa-comment-medical"></i></div>
-                <h4 className="text-slate-900 font-black text-2xl tracking-tight">How can I assist you?</h4>
-                <p className="text-slate-500 text-sm font-medium leading-relaxed italic">Ask questions about your meds, lab statuses, or interaction warnings. Voice input is active.</p>
+              <div className="text-center py-16 px-8 space-y-8">
+                <div className="w-24 h-24 bg-white rounded-[3rem] shadow-xl border border-slate-100 flex items-center justify-center mx-auto text-indigo-600 text-4xl"><i className="fas fa-comment-medical"></i></div>
+                <h4 className="text-slate-900 font-black text-2xl tracking-tight leading-none">AI Medical Assistant</h4>
+                <p className="text-slate-500 text-sm font-medium leading-relaxed italic">Ask follow-up questions about your scan results. Voice input is supported.</p>
               </div>
             )}
             {messages.map((m, i) => (
@@ -164,7 +165,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
               ))}
             </div>
             
-            <div className={`flex items-center bg-slate-100 rounded-[2rem] px-6 py-5 border transition-all ${input.trim() || isListening ? 'border-indigo-500 bg-white shadow-2xl ring-8 ring-indigo-500/5' : 'border-slate-200'}`}>
+            <div className={`flex items-center bg-slate-100 rounded-[2.5rem] px-6 py-5 border transition-all ${input.trim() || isListening ? 'border-indigo-500 bg-white shadow-2xl ring-8 ring-indigo-500/5' : 'border-slate-200'}`}>
               <button 
                 onClick={toggleListening}
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isListening ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-200 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600'}`}
@@ -175,7 +176,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ context, language = 'English' }) => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend(input)}
-                placeholder={isListening ? "Listening now..." : "Ask MediDecode AI..."}
+                placeholder={isListening ? "Listening now..." : "Ask Clinical Assistant..."}
                 className="bg-transparent flex-1 text-sm outline-none font-bold text-slate-700 placeholder:text-slate-400 ml-5"
               />
               <button 
