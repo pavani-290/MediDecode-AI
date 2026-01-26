@@ -82,7 +82,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isAnalyzing, onPrevie
     setShowQRScanner(false);
     setError(null);
     
-    // Check if result is a Data URI (Base64 image or PDF)
     if (result.startsWith('data:')) {
       try {
         const fetchResponse = await fetch(result);
@@ -92,17 +91,23 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isAnalyzing, onPrevie
         setError("Unable to process QR encoded data.");
       }
     } 
-    // Check if result is a URL (Mocking a secure report link fetch)
     else if (result.startsWith('http')) {
       setError("Linking to medical portal: " + new URL(result).hostname);
-      // In a real scenario, we'd fetch the document from the portal.
-      // For the demo, we alert the user that it's a valid link.
       setTimeout(() => {
         setError("Cloud portal linked. Please upload the file directly if cross-origin access is restricted.");
       }, 2000);
     } else {
       setError("Scanned QR is not a valid medical portal link.");
     }
+  };
+
+  const openQRScanner = () => {
+    // Check for hardware presence to prevent laptop/desktop navigation crash
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError("Camera hardware is not accessible on this device.");
+      return;
+    }
+    setShowQRScanner(true);
   };
 
   return (
@@ -139,7 +144,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isAnalyzing, onPrevie
                <div className="absolute top-0 left-0 w-full h-full rounded-[3rem] border-2 border-indigo-500/20 pointer-events-none"></div>
             </div>
             <div className="flex justify-center space-x-4">
-              <button onClick={() => { setPreview(null); fileInputRef.current?.click(); }} className="bg-slate-900 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 transition-all shadow-xl">Replace Document</button>
+              <button onClick={() => { setPreview(null); fileInputRef.current?.click(); }} className="bg-slate-900 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 transition-all shadow-xl cursor-pointer">Replace Document</button>
             </div>
           </div>
         ) : (
@@ -155,14 +160,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload, isAnalyzing, onPrevie
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-6">
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-slate-900 text-white px-14 py-7 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.3em] shadow-4xl hover:bg-indigo-600 hover:-translate-y-1.5 transition-all active:scale-95"
+                className="bg-slate-900 text-white px-14 py-7 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.3em] shadow-4xl hover:bg-indigo-600 hover:-translate-y-1.5 transition-all active:scale-95 cursor-pointer"
               >
                 <i className="fas fa-camera mr-4"></i>
                 Upload Clinical Doc
               </button>
               <button 
-                onClick={() => setShowQRScanner(true)}
-                className="bg-white text-indigo-600 border-2 border-indigo-100 px-14 py-7 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.3em] shadow-xl hover:bg-indigo-50 transition-all active:scale-95"
+                onClick={openQRScanner}
+                className="bg-white text-indigo-600 border-2 border-indigo-100 px-14 py-7 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.3em] shadow-xl hover:bg-indigo-50 transition-all active:scale-95 cursor-pointer"
               >
                 <i className="fas fa-qrcode mr-4"></i>
                 Scan QR Portal

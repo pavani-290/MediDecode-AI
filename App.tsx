@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { analyzeMedicalDocument, translateAnalysisResult } from './services/geminiService';
 import { saveHistory, loadHistory } from './services/storageService';
@@ -28,6 +29,7 @@ const App: React.FC = () => {
   
   const analysisRef = useRef<any>(null);
 
+  // Persistence and Auth Sync
   useEffect(() => {
     const initApp = async () => {
       const savedHistory = await loadHistory();
@@ -43,6 +45,11 @@ const App: React.FC = () => {
     };
     initApp();
   }, []);
+
+  // Fix: Ensure every view change scrolls to top to prevent "blank" screens on laptop
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [view]);
 
   const handleLanguageChange = async (newLang: SupportedLanguage) => {
     setLanguage(newLang);
@@ -110,33 +117,40 @@ const App: React.FC = () => {
     }
   };
 
+  // Fix: Wrap conditional views in relative z-10 to ensure laptop pointer event capture
   if (view === 'landing') return (
-    <LandingPage 
-      onStart={() => setView('app')} 
-      onLoginClick={() => setView('auth')} 
-      onNavigateInfo={(t) => { setInfoType(t as any); setView('info'); }} 
-      user={user}
-    />
+    <div className="relative z-10">
+      <LandingPage 
+        onStart={() => setView('app')} 
+        onLoginClick={() => setView('auth')} 
+        onNavigateInfo={(t) => { setInfoType(t as any); setView('info'); }} 
+        user={user}
+      />
+    </div>
   );
 
   if (view === 'auth' && !user) return (
-    <Auth onLogin={(u) => { 
-      setUser(u); 
-      localStorage.setItem('medUser', JSON.stringify(u));
-      setView('app'); 
-    }} onBack={() => setView('landing')} />
+    <div className="relative z-10">
+      <Auth onLogin={(u) => { 
+        setUser(u); 
+        localStorage.setItem('medUser', JSON.stringify(u));
+        setView('app'); 
+      }} onBack={() => setView('landing')} />
+    </div>
   );
 
   if (view === 'info') return (
-    <InfoPage 
-      type={infoType as any} 
-      onBack={() => setView(result ? 'app' : 'landing')} 
-      onAction={() => setView('app')} 
-    />
+    <div className="relative z-10">
+      <InfoPage 
+        type={infoType as any} 
+        onBack={() => setView(result ? 'app' : 'landing')} 
+        onAction={() => setView('app')} 
+      />
+    </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 selection:bg-blue-600 selection:text-white relative z-10">
       <Header 
         currentLanguage={language} 
         onLanguageChange={handleLanguageChange} 
@@ -147,9 +161,9 @@ const App: React.FC = () => {
         hasResult={!!result} 
         user={user} 
       />
-      <main className="max-w-7xl mx-auto px-6 pt-36 md:pt-40 report-container relative z-10">
+      <main className="max-w-7xl mx-auto px-6 pt-36 md:pt-40 report-container">
         {error && (
-          <div className="bg-rose-50 border border-rose-200 p-8 rounded-[3rem] mb-10 text-rose-700 flex justify-between items-center shadow-2xl animate-in slide-in-from-top-4 no-print relative z-10">
+          <div className="bg-rose-50 border border-rose-200 p-8 rounded-[3rem] mb-10 text-rose-700 flex justify-between items-center shadow-2xl animate-in slide-in-from-top-4 no-print">
             <span className="font-black text-sm uppercase tracking-widest">{error}</span>
             <button onClick={() => setError(null)}><i className="fas fa-times"></i></button>
           </div>

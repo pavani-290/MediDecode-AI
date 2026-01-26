@@ -31,33 +31,32 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
     { num: '04', title: 'Insight Delivery', desc: 'Professional reports in 12+ native languages.', icon: 'fa-file-medical-alt', color: 'bg-amber-500' }
   ];
 
-  const features = [
-    { icon: 'fa-signature', title: 'Handwriting OCR', desc: 'Vertex-grade deciphering for prescriptions.', theme: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
-    { icon: 'fa-comment-medical', title: 'Plain Language', desc: 'No more medical jargon or confusion.', theme: 'bg-rose-50 text-rose-600 border-rose-100' },
-    { icon: 'fa-calendar-check', title: 'Visual Schedules', desc: 'Daily dose mapping made intuitive.', theme: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-    { icon: 'fa-chart-line', title: 'Lab Status', desc: 'Visual markers for blood test results.', theme: 'bg-amber-50 text-amber-600 border-amber-100' },
-    { icon: 'fa-location-dot', theme: 'bg-sky-50 text-sky-600 border-sky-100', title: 'Grounded GPS', desc: 'Real stores, no hallucinations.' },
-    { icon: 'fa-volume-high', theme: 'bg-violet-50 text-violet-600 border-violet-100', title: 'Audio Summaries', desc: 'Listen to your report summary.' }
-  ];
-
   return (
-    <div className="min-h-screen bg-[#fcfdff]">
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 px-6 md:px-10 py-4 ${scrolled ? 'bg-white/80 backdrop-blur-3xl border-b border-slate-100 py-3 shadow-lg shadow-indigo-500/5' : 'bg-transparent'}`}>
+    <div className="min-h-screen bg-[#fcfdff] relative">
+      <nav className={`fixed top-0 left-0 right-0 z-[60] transition-all duration-500 px-6 md:px-10 py-4 ${scrolled ? 'bg-white/80 backdrop-blur-3xl border-b border-slate-100 py-3 shadow-lg shadow-indigo-500/5' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
             <LogoMark />
             <span className="font-black text-2xl tracking-tighter text-slate-900 uppercase">MediDecode <span className="text-indigo-600">AI</span></span>
           </div>
           <div className="flex items-center space-x-6">
-            <button onClick={onLoginClick} className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors">Portal Access</button>
-            <button onClick={onStart} className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-8 py-4 rounded-2xl transition-all shadow-2xl hover:bg-indigo-600 hover:shadow-indigo-500/40 hover:-translate-y-1">
+            <button 
+              onClick={(e) => { e.preventDefault(); onLoginClick(); }}
+              className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+            >
+              Portal Access
+            </button>
+            <button 
+              onClick={(e) => { e.preventDefault(); onStart(); }}
+              className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-8 py-4 rounded-2xl transition-all shadow-2xl hover:bg-indigo-600 hover:shadow-indigo-500/40 hover:-translate-y-1 cursor-pointer"
+            >
               Start Scan <i className="fas fa-bolt ml-2 text-rose-400"></i>
             </button>
           </div>
         </div>
       </nav>
 
-      <section className="pt-48 pb-24 px-6 relative overflow-hidden">
+      <section className="pt-48 pb-24 px-6 relative overflow-hidden z-10">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           <div className="lg:col-span-7 space-y-10 text-center lg:text-left">
             <div className="inline-flex items-center space-x-3 px-5 py-2.5 bg-white/80 glass-card rounded-full shadow-xl">
@@ -72,10 +71,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
               The professional visual portal for deciphering prescriptions and complex lab reports with extreme precision.
             </p>
             <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
-              <button onClick={onStart} className="bg-slate-900 text-white px-12 py-7 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-4xl hover:bg-indigo-600 transition-all hover:scale-105 active:scale-95 group">
+              <button 
+                onClick={(e) => { e.preventDefault(); onStart(); }}
+                className="bg-slate-900 text-white px-12 py-7 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-4xl hover:bg-indigo-600 transition-all hover:scale-105 active:scale-95 group cursor-pointer"
+              >
                 Begin Analysis <i className="fas fa-long-arrow-right ml-4 group-hover:translate-x-3 transition-transform"></i>
               </button>
-              <button onClick={() => onNavigateInfo?.('services')} className="bg-white/50 backdrop-blur-lg border-2 border-slate-100 text-slate-900 px-12 py-7 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] hover:bg-slate-100 transition-all">
+              <button 
+                onClick={() => onNavigateInfo?.('services')} 
+                className="bg-white/50 backdrop-blur-lg border-2 border-slate-100 text-slate-900 px-12 py-7 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] hover:bg-slate-100 transition-all cursor-pointer"
+              >
                 The Tech Stack
               </button>
             </div>
@@ -106,7 +111,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-32">
+      <section className="max-w-7xl mx-auto px-6 py-32 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {workflowSteps.map((step, i) => (
             <div key={i} className="relative p-12 bg-white/70 glass-card rounded-[3.5rem] border border-slate-100 group hover:-translate-y-3 transition-all">
@@ -121,11 +126,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
         </div>
       </section>
 
-      {/* REFINED FOOTER SECTION MATCHING IMAGE */}
-      <footer className="py-24 px-6 md:px-12 border-t border-slate-100 bg-white">
+      <footer className="py-24 px-6 md:px-12 border-t border-slate-100 bg-white relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
-          
-          {/* BRAND AREA */}
           <div className="space-y-6">
             <div className="flex items-center justify-center md:justify-start space-x-3 cursor-pointer group" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
                <LogoMark />
@@ -136,7 +138,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
             </p>
           </div>
 
-          {/* DYNAMIC NAVIGATION LINKS - MATCHING IMAGE CAPITALIZATION */}
           <div className="flex flex-wrap justify-center gap-8 md:gap-16">
              {[
                { name: 'PRIVACY', type: 'privacy' },
@@ -146,21 +147,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onLoginClick, onNavi
                <button 
                 key={item.name} 
                 onClick={() => onNavigateInfo?.(item.type as any)}
-                className="text-[11px] font-black uppercase tracking-[0.2em] text-[#94a3b8] hover:text-indigo-600 transition-all"
+                className="text-[11px] font-black uppercase tracking-[0.2em] text-[#94a3b8] hover:text-indigo-600 transition-all cursor-pointer"
                >
                 {item.name}
                </button>
              ))}
           </div>
 
-          {/* NODE ONLINE PILL - MATCHING IMAGE */}
           <div className="bg-[#f0fdf4] px-10 py-4 rounded-3xl border border-[#dcfce7] flex items-center space-x-4 shadow-sm">
             <span className="w-3 h-3 bg-[#22c55e] rounded-full shadow-[0_0_12px_#22c55e]"></span>
             <span className="text-[11px] font-black uppercase text-[#166534] tracking-[0.3em]">Node Online</span>
           </div>
         </div>
 
-        {/* COPYRIGHT & SOCIAL - UPDATED TO 2026 */}
         <div className="max-w-7xl mx-auto mt-20 pt-10 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">© 2026 MediDecode AI Clinical Portal • All Clinical Data Encrypted</p>
            <div className="flex space-x-8">
