@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { analyzeMedicalDocument, translateAnalysisResult } from './services/geminiService';
 import { saveHistory, loadHistory } from './services/storageService';
@@ -94,7 +95,17 @@ const App: React.FC = () => {
       setHistory(newHistory);
       await saveHistory(newHistory);
     } catch (err: any) {
-      setError(err.message || "Failed to analyze document. Please ensure high clarity.");
+      console.error("Analysis Error:", err);
+      let userMessage = "The medical document could not be analyzed. Please ensure the image is clear.";
+      
+      const errorStr = typeof err === 'string' ? err : (err.message || JSON.stringify(err));
+      if (errorStr.includes('503') || errorStr.includes('overloaded')) {
+        userMessage = "Clinical Node Busy: The medical AI model is currently experiencing high load. Please wait a few seconds and try again.";
+      } else if (errorStr.includes('429')) {
+        userMessage = "Rate Limit Reached: Please wait a moment before trying another scan.";
+      }
+      
+      setError(userMessage);
     } finally {
       setIsAnalyzing(false);
     }
@@ -119,7 +130,6 @@ const App: React.FC = () => {
     }
   };
 
-  // High-stability view container
   return (
     <div className="relative w-full min-h-screen">
       {view === 'landing' && (
@@ -164,9 +174,12 @@ const App: React.FC = () => {
           />
           <main className="max-w-7xl mx-auto px-6 pt-36 md:pt-40 relative z-20">
             {error && (
-              <div className="bg-rose-50 border border-rose-200 p-8 rounded-[3rem] mb-10 text-rose-700 flex justify-between items-center shadow-2xl animate-in slide-in-from-top-4 no-print pointer-events-auto">
-                <span className="font-black text-xs uppercase tracking-widest">{error}</span>
-                <button onClick={() => setError(null)} className="p-2"><i className="fas fa-times"></i></button>
+              <div className="bg-rose-50 border-2 border-rose-200 p-8 rounded-[3rem] mb-10 text-rose-700 flex justify-between items-center shadow-2xl animate-in slide-in-from-top-4 no-print pointer-events-auto">
+                <div className="flex items-center space-x-4">
+                  <i className="fas fa-triangle-exclamation text-2xl text-rose-500"></i>
+                  <span className="font-black text-xs uppercase tracking-widest leading-relaxed max-w-2xl">{error}</span>
+                </div>
+                <button onClick={() => setError(null)} className="p-3 hover:bg-rose-100 rounded-full transition-colors"><i className="fas fa-times"></i></button>
               </div>
             )}
             
